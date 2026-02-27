@@ -65,7 +65,7 @@ function Install-WithWinget {
             "Install $DisplayName manually, then rerun launch_windows_bootstrap.cmd.",
             "Manual install links:",
             "- Git: https://git-scm.com/download/win",
-            "- Python 3.11 (64-bit): https://www.python.org/ftp/python/3.11.14/python-3.11.14-amd64.exe",
+            "- Python 3.11 (64-bit): https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe",
             "If you are using Windows Sandbox, this is expected on some images."
         ) -join [Environment]::NewLine
         throw $manualHint
@@ -168,8 +168,8 @@ function Ensure-Python311Installed {
     }
     if (-not $resolved -and (Test-Yes "Download and run Python 3.11 installer now?" $true)) {
         Install-ExecutableFromUrl `
-            -Url "https://www.python.org/ftp/python/3.11.14/python-3.11.14-amd64.exe" `
-            -FileName "python-3.11.14-amd64.exe" `
+            -Url "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" `
+            -FileName "python-3.11.9-amd64.exe" `
             -DisplayName "Python 3.11"
         $resolved = Resolve-Python311Command
     }
@@ -177,7 +177,7 @@ function Ensure-Python311Installed {
         throw @(
             "Python 3.11 is still not detected.",
             "Install it manually and rerun launch_windows_bootstrap.cmd:",
-            "- https://www.python.org/ftp/python/3.11.14/python-3.11.14-amd64.exe",
+            "- https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe",
             "After install, close and reopen Command Prompt, then run bootstrap again."
         ) -join [Environment]::NewLine
     }

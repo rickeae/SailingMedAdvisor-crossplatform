@@ -107,6 +107,9 @@ const DEFAULT_SETTINGS = {
     in_k: 50,
     mission_context: "Isolated Medical Station offshore.",
     rep_penalty: 1.1,
+    q27b_gguf_path: "",
+    q27b_ctx: 0,
+    q27b_threads: 0,
     user_mode: "user",
     last_prompt_verbatim: "",
     vaccine_types: ["MMR", "DTaP", "HepB", "HepA", "Td/Tdap", "Influenza", "COVID-19"],
@@ -1659,7 +1662,8 @@ function scheduleAutoSave(reason = 'auto') {
  * 
  * Numeric Fields:
  * Validated and coerced to numbers. Falls back to defaults if invalid.
- * Includes: tr_temp, tr_tok, tr_p, tr_k, in_temp, in_tok, in_p, in_k, rep_penalty
+ * Includes: tr_temp, tr_tok, tr_p, tr_k, in_temp, in_tok, in_p, in_k, rep_penalty,
+ *           q27b_ctx, q27b_threads
  * 
  * Side Effects:
  * - Updates window.CACHED_SETTINGS
@@ -1678,8 +1682,20 @@ async function saveSettings(showAlert = true, reason = 'manual') {
     const saveSeq = ++settingsSaveSequence;
     try {
         const s = {};
-        const numeric = new Set(['tr_temp','tr_tok','tr_p','tr_k','in_temp','in_tok','in_p','in_k','rep_penalty']);
-        ['triage_instruction','inquiry_instruction','tr_temp','tr_tok','tr_p','tr_k','in_temp','in_tok','in_p','in_k','mission_context','rep_penalty','user_mode','db_write_lock'].forEach(k => {
+        const numeric = new Set([
+            'tr_temp','tr_tok','tr_p','tr_k',
+            'in_temp','in_tok','in_p','in_k',
+            'rep_penalty',
+            'q27b_ctx','q27b_threads'
+        ]);
+        [
+            'triage_instruction','inquiry_instruction',
+            'tr_temp','tr_tok','tr_p','tr_k',
+            'in_temp','in_tok','in_p','in_k',
+            'mission_context','rep_penalty',
+            'q27b_gguf_path','q27b_ctx','q27b_threads',
+            'user_mode','db_write_lock'
+        ].forEach(k => {
             const el = document.getElementById(k);
             if (!el) return;
             const val = el.type === 'checkbox' ? el.checked : el.value;
@@ -1732,6 +1748,9 @@ async function saveSettings(showAlert = true, reason = 'manual') {
         if (typeof refreshPromptPreview === 'function') {
             refreshPromptPreview();
         }
+        if (typeof refreshModelAvailability === 'function') {
+            refreshModelAvailability({ silent: true }).catch(() => {});
+        }
         updateSettingsMeta(updated);
         return true;
     } catch (err) {
@@ -1772,6 +1791,7 @@ async function flushSettingsBeforeChat() {
  * Sections:
  * - 'triage': Triage prompt and parameters (temp, tokens, top-p, top-k)
  * - 'inquiry': Inquiry prompt and parameters
+ * - 'q27b': Optional quantized 27B CPU settings
  * - 'mission': Mission context description
  * 
  * Immediately saves after reset to persist changes.
@@ -1779,20 +1799,31 @@ async function flushSettingsBeforeChat() {
  * @param {string} section - Section identifier
  */
 function resetSection(section) {
+    const setValue = (id, value) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.value = value;
+    };
     if (section === 'triage') {
-        document.getElementById('triage_instruction').value = DEFAULT_SETTINGS.triage_instruction;
-        document.getElementById('tr_temp').value = DEFAULT_SETTINGS.tr_temp;
-        document.getElementById('tr_tok').value = DEFAULT_SETTINGS.tr_tok;
-        document.getElementById('tr_p').value = DEFAULT_SETTINGS.tr_p;
-        document.getElementById('tr_k').value = DEFAULT_SETTINGS.tr_k;
+        setValue('triage_instruction', DEFAULT_SETTINGS.triage_instruction);
+        setValue('tr_temp', DEFAULT_SETTINGS.tr_temp);
+        setValue('tr_tok', DEFAULT_SETTINGS.tr_tok);
+        setValue('tr_p', DEFAULT_SETTINGS.tr_p);
+        setValue('tr_k', DEFAULT_SETTINGS.tr_k);
     } else if (section === 'inquiry') {
-        document.getElementById('inquiry_instruction').value = DEFAULT_SETTINGS.inquiry_instruction;
-        document.getElementById('in_temp').value = DEFAULT_SETTINGS.in_temp;
-        document.getElementById('in_tok').value = DEFAULT_SETTINGS.in_tok;
-        document.getElementById('in_p').value = DEFAULT_SETTINGS.in_p;
-        document.getElementById('in_k').value = DEFAULT_SETTINGS.in_k;
+        setValue('inquiry_instruction', DEFAULT_SETTINGS.inquiry_instruction);
+        setValue('in_temp', DEFAULT_SETTINGS.in_temp);
+        setValue('in_tok', DEFAULT_SETTINGS.in_tok);
+        setValue('in_p', DEFAULT_SETTINGS.in_p);
+        setValue('in_k', DEFAULT_SETTINGS.in_k);
+    } else if (section === 'q27b') {
+        setValue('q27b_gguf_path', DEFAULT_SETTINGS.q27b_gguf_path);
+        setValue('q27b_ctx', DEFAULT_SETTINGS.q27b_ctx);
+        setValue('q27b_threads', DEFAULT_SETTINGS.q27b_threads);
     } else if (section === 'mission') {
-        document.getElementById('mission_context').value = DEFAULT_SETTINGS.mission_context;
+        setValue('mission_context', DEFAULT_SETTINGS.mission_context);
+    } else {
+        return;
     }
     saveSettings();
 }

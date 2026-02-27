@@ -235,6 +235,9 @@ def _init_db():
                 in_k INTEGER,
                 mission_context TEXT,
                 rep_penalty REAL,
+                q27b_gguf_path TEXT,
+                q27b_ctx INTEGER,
+                q27b_threads INTEGER,
                 updated_at TEXT NOT NULL
             );
             """
@@ -560,6 +563,9 @@ def _maybe_migrate_model_params(conn, now):
             in_k INTEGER,
             mission_context TEXT,
             rep_penalty REAL,
+            q27b_gguf_path TEXT,
+            q27b_ctx INTEGER,
+            q27b_threads INTEGER,
             updated_at TEXT NOT NULL
         );
         """
@@ -577,10 +583,12 @@ def _maybe_migrate_model_params(conn, now):
                 """
                 INSERT INTO model_params(
                     id, triage_instruction, inquiry_instruction, tr_temp, tr_tok, tr_p, tr_k,
-                    in_temp, in_tok, in_p, in_k, mission_context, rep_penalty, updated_at
+                    in_temp, in_tok, in_p, in_k, mission_context, rep_penalty,
+                    q27b_gguf_path, q27b_ctx, q27b_threads, updated_at
                 ) VALUES (
                     1, :triage_instruction, :inquiry_instruction, :tr_temp, :tr_tok, :tr_p, :tr_k,
-                    :in_temp, :in_tok, :in_p, :in_k, :mission_context, :rep_penalty, :updated_at
+                    :in_temp, :in_tok, :in_p, :in_k, :mission_context, :rep_penalty,
+                    :q27b_gguf_path, :q27b_ctx, :q27b_threads, :updated_at
                 )
                 ON CONFLICT(id) DO UPDATE SET
                     triage_instruction=excluded.triage_instruction,
@@ -595,6 +603,9 @@ def _maybe_migrate_model_params(conn, now):
                     in_k=excluded.in_k,
                     mission_context=excluded.mission_context,
                     rep_penalty=excluded.rep_penalty,
+                    q27b_gguf_path=excluded.q27b_gguf_path,
+                    q27b_ctx=excluded.q27b_ctx,
+                    q27b_threads=excluded.q27b_threads,
                     updated_at=excluded.updated_at;
                 """,
                 {
@@ -610,6 +621,9 @@ def _maybe_migrate_model_params(conn, now):
                     "in_k": data.get("in_k"),
                     "mission_context": data.get("mission_context"),
                     "rep_penalty": data.get("rep_penalty"),
+                    "q27b_gguf_path": data.get("q27b_gguf_path"),
+                    "q27b_ctx": data.get("q27b_ctx"),
+                    "q27b_threads": data.get("q27b_threads"),
                     "updated_at": now,
                 },
             )
@@ -1084,6 +1098,9 @@ def _maybe_migrate_model_params(conn, now):
             in_k INTEGER,
             mission_context TEXT,
             rep_penalty REAL,
+            q27b_gguf_path TEXT,
+            q27b_ctx INTEGER,
+            q27b_threads INTEGER,
             updated_at TEXT NOT NULL
         );
         """
@@ -1101,10 +1118,12 @@ def _maybe_migrate_model_params(conn, now):
                 """
                 INSERT INTO model_params(
                     id, triage_instruction, inquiry_instruction, tr_temp, tr_tok, tr_p, tr_k,
-                    in_temp, in_tok, in_p, in_k, mission_context, rep_penalty, updated_at
+                    in_temp, in_tok, in_p, in_k, mission_context, rep_penalty,
+                    q27b_gguf_path, q27b_ctx, q27b_threads, updated_at
                 ) VALUES (
                     1, :triage_instruction, :inquiry_instruction, :tr_temp, :tr_tok, :tr_p, :tr_k,
-                    :in_temp, :in_tok, :in_p, :in_k, :mission_context, :rep_penalty, :updated_at
+                    :in_temp, :in_tok, :in_p, :in_k, :mission_context, :rep_penalty,
+                    :q27b_gguf_path, :q27b_ctx, :q27b_threads, :updated_at
                 )
                 ON CONFLICT(id) DO UPDATE SET
                     triage_instruction=excluded.triage_instruction,
@@ -1119,6 +1138,9 @@ def _maybe_migrate_model_params(conn, now):
                     in_k=excluded.in_k,
                     mission_context=excluded.mission_context,
                     rep_penalty=excluded.rep_penalty,
+                    q27b_gguf_path=excluded.q27b_gguf_path,
+                    q27b_ctx=excluded.q27b_ctx,
+                    q27b_threads=excluded.q27b_threads,
                     updated_at=excluded.updated_at;
                 """,
                 {
@@ -1134,6 +1156,9 @@ def _maybe_migrate_model_params(conn, now):
                     "in_k": data.get("in_k"),
                     "mission_context": data.get("mission_context"),
                     "rep_penalty": data.get("rep_penalty"),
+                    "q27b_gguf_path": data.get("q27b_gguf_path"),
+                    "q27b_ctx": data.get("q27b_ctx"),
+                    "q27b_threads": data.get("q27b_threads"),
                     "updated_at": now,
                 },
             )
@@ -1202,6 +1227,12 @@ def _ensure_model_params_columns(conn):
             conn.execute("ALTER TABLE model_params ADD COLUMN tr_k INTEGER;")
         if "in_k" not in names:
             conn.execute("ALTER TABLE model_params ADD COLUMN in_k INTEGER;")
+        if "q27b_gguf_path" not in names:
+            conn.execute("ALTER TABLE model_params ADD COLUMN q27b_gguf_path TEXT;")
+        if "q27b_ctx" not in names:
+            conn.execute("ALTER TABLE model_params ADD COLUMN q27b_ctx INTEGER;")
+        if "q27b_threads" not in names:
+            conn.execute("ALTER TABLE model_params ADD COLUMN q27b_threads INTEGER;")
     except Exception as exc:
         logger.warning("Unable to add model_params columns: %s", exc)
 
@@ -2774,7 +2805,8 @@ def get_model_params():
         row = conn.execute(
             """
             SELECT triage_instruction, inquiry_instruction, tr_temp, tr_tok, tr_p, tr_k,
-                   in_temp, in_tok, in_p, in_k, mission_context, rep_penalty
+                   in_temp, in_tok, in_p, in_k, mission_context, rep_penalty,
+                   q27b_gguf_path, q27b_ctx, q27b_threads
             FROM model_params WHERE id=1
             """
         ).fetchone()
@@ -2793,6 +2825,9 @@ def get_model_params():
         "in_k",
         "mission_context",
         "rep_penalty",
+        "q27b_gguf_path",
+        "q27b_ctx",
+        "q27b_threads",
     ]
     return {k: row[idx] for idx, k in enumerate(keys)}
 
@@ -2810,10 +2845,12 @@ def set_model_params(data: dict):
             """
             INSERT INTO model_params(
                 id, triage_instruction, inquiry_instruction, tr_temp, tr_tok, tr_p, tr_k,
-                in_temp, in_tok, in_p, in_k, mission_context, rep_penalty, updated_at
+                in_temp, in_tok, in_p, in_k, mission_context, rep_penalty,
+                q27b_gguf_path, q27b_ctx, q27b_threads, updated_at
             ) VALUES (
                 1, :triage_instruction, :inquiry_instruction, :tr_temp, :tr_tok, :tr_p, :tr_k,
-                :in_temp, :in_tok, :in_p, :in_k, :mission_context, :rep_penalty, :updated_at
+                :in_temp, :in_tok, :in_p, :in_k, :mission_context, :rep_penalty,
+                :q27b_gguf_path, :q27b_ctx, :q27b_threads, :updated_at
             )
             ON CONFLICT(id) DO UPDATE SET
                 triage_instruction=excluded.triage_instruction,
@@ -2828,6 +2865,9 @@ def set_model_params(data: dict):
                 in_k=excluded.in_k,
                 mission_context=excluded.mission_context,
                 rep_penalty=excluded.rep_penalty,
+                q27b_gguf_path=excluded.q27b_gguf_path,
+                q27b_ctx=excluded.q27b_ctx,
+                q27b_threads=excluded.q27b_threads,
                 updated_at=excluded.updated_at;
             """,
             {
@@ -2843,6 +2883,9 @@ def set_model_params(data: dict):
                 "in_k": params.get("in_k"),
                 "mission_context": params.get("mission_context"),
                 "rep_penalty": params.get("rep_penalty"),
+                "q27b_gguf_path": params.get("q27b_gguf_path"),
+                "q27b_ctx": params.get("q27b_ctx"),
+                "q27b_threads": params.get("q27b_threads"),
                 "updated_at": now,
             },
         )

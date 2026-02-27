@@ -593,11 +593,16 @@ REQUIRED_MODELS = [
     "google/medgemma-1.5-4b-it",
     "google/medgemma-27b-text-it",
 ]
+QUANTIZED_27B_MODEL_ID = "local/medgemma-27b-quantized-cpu"
+QUANTIZED_27B_PATH_ENV = "MEDGEMMA_27B_GGUF_PATH"
+QUANTIZED_27B_CTX_ENV = "MEDGEMMA_27B_GGUF_CTX"
+QUANTIZED_27B_THREADS_ENV = "MEDGEMMA_27B_GGUF_THREADS"
 
 # Explicit model type mapping to avoid misclassifying text-only models as vision.
 TEXT_MODELS = {
     "google/medgemma-1.5-4b-it",
     "google/medgemma-27b-text-it",
+    QUANTIZED_27B_MODEL_ID,
 }
 VISION_MODELS = set()
 
@@ -653,6 +658,7 @@ elif device == "cuda":
 else:
     dtype = torch.float32
 models = {"active_name": "", "model": None, "processor": None, "tokenizer": None, "is_text": False}
+_GGUF_27B_RUNTIME = {"llm": None, "path": "", "n_ctx": 0, "threads": 0}
 MODEL_MUTEX = threading.Lock()
 MODEL_BUSY_META_LOCK = threading.Lock()
 MODEL_BUSY_META = {
@@ -1290,6 +1296,9 @@ def get_defaults():
         "in_k": 50,
         "rep_penalty": 1.1,
         "mission_context": "Isolated Medical Station offshore.",
+        "q27b_gguf_path": "",
+        "q27b_ctx": 0,
+        "q27b_threads": 0,
         "user_mode": "user",
         "db_write_lock": bool(get_db_write_lock()),
         "db_write_lock_forced": DB_WRITE_LOCK_FORCED is not None,
@@ -2615,15 +2624,38 @@ def _local_model_availability_payload(remote_mode: bool = False) -> dict:
             available_models.append(model_name)
         else:
             missing_models.append(model_name)
+
+    # Optional CPU-only slow/deep path: quantized 27B GGUF via llama.cpp.
+    try:
+        settings = db_op("settings", store=DEFAULT_store) or {}
+    except Exception:
+        settings = {}
+    quantized_status = _quantized_27b_status(settings=settings)
+    quantized_row = {
+        "model": QUANTIZED_27B_MODEL_ID,
+        "installed": bool(quantized_status.get("installed")),
+        "error": quantized_status.get("error") or "",
+        "path": quantized_status.get("path") or "",
+        "optional": True,
+    }
+    models.append(quantized_row)
+    if quantized_row["installed"]:
+        available_models.append(QUANTIZED_27B_MODEL_ID)
+
     has_any = bool(available_models)
     message = (
-        "No local MedGemma models are installed. Open Settings -> Offline Readiness Check to download at least one model."
+        (
+            "No runnable MedGemma models are available. "
+            "Install a local HF model in Settings -> Offline Readiness Check, "
+            "or configure quantized 27B in Settings -> MedGemma Model Parameters."
+        )
         if not has_any
         else ""
     )
     return {
         "models": models,
         "required_models": list(REQUIRED_MODELS),
+        "optional_models": [QUANTIZED_27B_MODEL_ID],
         "available_models": available_models,
         "missing_models": missing_models,
         "has_any_local_model": has_any,
@@ -3484,6 +3516,108 @@ def _cap_new_tokens(max_new_tokens, input_len, model_max_len):
     return max_new_tokens
 
 
+def _load_quantized_27b_runtime(n_ctx: int, threads: int):
+    """
+    Load or reuse quantized 27B GGUF runtime (CPU-only, llama.cpp backend).
+    """
+    try:
+        settings = db_op("settings", store=DEFAULT_store) or {}
+    except Exception:
+        settings = {}
+    gguf_path = _resolve_quantized_27b_gguf_path(settings=settings)
+    if gguf_path is None:
+        raise RuntimeError(
+            "MISSING_27B_GGUF: Set the quantized 27B GGUF path in "
+            "Settings -> MedGemma Model Parameters."
+        )
+    try:
+        from llama_cpp import Llama
+    except Exception as exc:
+        raise RuntimeError(f"LLAMA_CPP_NOT_INSTALLED: {exc}")
+
+    current = _GGUF_27B_RUNTIME
+    if (
+        current.get("llm") is not None
+        and current.get("path") == str(gguf_path)
+        and current.get("n_ctx") == int(n_ctx)
+        and current.get("threads") == int(threads)
+    ):
+        return current["llm"], gguf_path
+
+    _GGUF_27B_RUNTIME["llm"] = None
+    _GGUF_27B_RUNTIME["path"] = ""
+    _GGUF_27B_RUNTIME["n_ctx"] = 0
+    _GGUF_27B_RUNTIME["threads"] = 0
+
+    llm = Llama(
+        model_path=str(gguf_path),
+        n_ctx=int(n_ctx),
+        n_threads=int(threads),
+        n_threads_batch=int(threads),
+        n_gpu_layers=0,  # Explicit CPU-only for crossplatform consistency.
+        verbose=False,
+    )
+    _GGUF_27B_RUNTIME["llm"] = llm
+    _GGUF_27B_RUNTIME["path"] = str(gguf_path)
+    _GGUF_27B_RUNTIME["n_ctx"] = int(n_ctx)
+    _GGUF_27B_RUNTIME["threads"] = int(threads)
+    return llm, gguf_path
+
+
+def _generate_quantized_27b_cpu(prompt: str, cfg: dict):
+    """
+    Generate response using optional quantized 27B GGUF model on CPU.
+    """
+    try:
+        settings = db_op("settings", store=DEFAULT_store) or {}
+    except Exception:
+        settings = {}
+    ctx_default = max(safe_int(cfg.get("tk"), 1024) * 2, 4096)
+    n_ctx = safe_int(
+        settings.get("q27b_ctx"),
+        safe_int(os.environ.get(QUANTIZED_27B_CTX_ENV), ctx_default),
+    )
+    cpu_count = os.cpu_count() or 4
+    threads_default = max(min(cpu_count, 16), 1)
+    threads = safe_int(
+        settings.get("q27b_threads"),
+        safe_int(os.environ.get(QUANTIZED_27B_THREADS_ENV), threads_default),
+    )
+    if threads < 1:
+        threads = 1
+    if n_ctx < 1024:
+        n_ctx = 1024
+    llm, gguf_path = _load_quantized_27b_runtime(n_ctx=n_ctx, threads=threads)
+    prompt_bytes = (prompt or "").encode("utf-8", errors="ignore")
+    prompt_tokens = len(llm.tokenize(prompt_bytes, add_bos=True))
+    max_new_tokens = max(safe_int(cfg.get("tk"), 1024), 1)
+    budget = max(n_ctx - prompt_tokens - 8, 1)
+    if budget < 1:
+        raise RuntimeError(
+            f"GGUF_CONTEXT_TOO_SMALL: prompt tokens={prompt_tokens}, context={n_ctx}. "
+            "Increase quantized context window in Settings."
+        )
+    max_new_tokens = min(max_new_tokens, budget)
+
+    completion = llm.create_completion(
+        prompt=prompt,
+        max_tokens=max_new_tokens,
+        temperature=safe_float(cfg.get("t"), 0.2),
+        top_p=safe_float(cfg.get("p"), 0.9),
+        top_k=max(safe_int(cfg.get("k"), 40), 1),
+        repeat_penalty=safe_float(cfg.get("rep_penalty"), 1.0),
+    )
+    choices = completion.get("choices") or []
+    text = ""
+    if choices and isinstance(choices[0], dict):
+        text = str(choices[0].get("text") or "").strip()
+    if not text:
+        raise RuntimeError(
+            f"GGUF_EMPTY_RESPONSE: model={gguf_path.name} max_tokens={max_new_tokens}"
+        )
+    return text
+
+
 def _generate_response_local(model_choice: str, force_cpu_slow: bool, prompt: str, cfg: dict, trace_id: str = ""):
     """
      Generate Response Local helper.
@@ -3492,6 +3626,7 @@ def _generate_response_local(model_choice: str, force_cpu_slow: bool, prompt: st
     _dbg("generate_response: local inference path")
     model_name = (model_choice or "google/medgemma-1.5-4b-it").strip()
     model_name_l = model_name.lower()
+    is_quantized_27b_cpu = model_name == QUANTIZED_27B_MODEL_ID
     is_large_model = "27b" in model_name_l or "28b" in model_name_l
     force_cuda = os.environ.get("FORCE_CUDA", "").strip() == "1"
     allow_cpu_fallback_on_cuda_error = os.environ.get("ALLOW_CPU_FALLBACK_ON_CUDA_ERROR", "").strip() == "1"
@@ -3504,19 +3639,32 @@ def _generate_response_local(model_choice: str, force_cpu_slow: bool, prompt: st
             cuda_err = str(exc)
         detail = f": {cuda_err}" if cuda_err else ""
         raise RuntimeError(f"CUDA_NOT_AVAILABLE{detail}")
-    if is_large_model and runtime_device != "cuda" and not force_cpu_slow:
+    if is_quantized_27b_cpu and not force_cpu_slow:
         raise RuntimeError("SLOW_28B_CPU")
+    if is_large_model and runtime_device != "cuda" and not force_cpu_slow and not is_quantized_27b_cpu:
+        raise RuntimeError("SLOW_28B_CPU")
+    execution_device = "cpu" if is_quantized_27b_cpu else runtime_device
     local_started = time.perf_counter()
     _runtime_log(
         "inference.local.start",
         trace_id=trace_id,
         model=model_name,
-        runtime_device=runtime_device,
+        runtime_device=execution_device,
         is_large_model=is_large_model,
         force_cpu_slow=force_cpu_slow,
     )
     try:
-        if is_large_model:
+        if is_quantized_27b_cpu:
+            try:
+                medgemma4.unload_model()
+            except Exception:
+                pass
+            try:
+                medgemma27b.unload_model()
+            except Exception:
+                pass
+            res = _generate_quantized_27b_cpu(prompt, cfg)
+        elif is_large_model:
             # Ensure only one model family occupies VRAM at a time.
             try:
                 medgemma4.unload_model()
@@ -3562,7 +3710,7 @@ def _generate_response_local(model_choice: str, force_cpu_slow: bool, prompt: st
                 level=logging.ERROR,
                 trace_id=trace_id,
                 model=model_name,
-                runtime_device=runtime_device,
+                runtime_device=execution_device,
                 error_type=type(exc).__name__,
                 error=err_txt,
                 elapsed_ms=int((time.perf_counter() - local_started) * 1000),
@@ -3581,6 +3729,8 @@ def _generate_response_local(model_choice: str, force_cpu_slow: bool, prompt: st
             raise RuntimeError(f"CUDA_NOT_AVAILABLE: {err_txt}")
 
         if is_large_model:
+            if is_quantized_27b_cpu:
+                raise RuntimeError(f"GGUF_RUNTIME_ERROR: {err_txt}")
             if not force_cpu_slow:
                 # Preserve existing UX: ask user to confirm slow CPU run for 27B.
                 raise RuntimeError("SLOW_28B_CPU")
@@ -3612,7 +3762,7 @@ def _generate_response_local(model_choice: str, force_cpu_slow: bool, prompt: st
         "inference.local.success",
         trace_id=trace_id,
         model=model_name,
-        runtime_device=runtime_device,
+        runtime_device=execution_device,
         response_len=len(res),
         elapsed_ms=int((time.perf_counter() - local_started) * 1000),
     )
@@ -4143,7 +4293,7 @@ async def chat(request: Request, _=Depends(require_auth)):
             if str(e) == "SLOW_28B_CPU":
                 return JSONResponse(
                     {
-                        "error": "The 28B MedGemma model on CPU can take an hour or more. Continue?",
+                        "error": "The 27B MedGemma model on CPU can take an hour or more. Continue?",
                         "confirm_28b": True,
                     },
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -4172,6 +4322,42 @@ async def chat(request: Request, _=Depends(require_auth)):
                         "details": str(e),
                     },
                     status_code=status.HTTP_502_BAD_GATEWAY,
+                )
+            if str(e).startswith("MISSING_27B_GGUF"):
+                return JSONResponse(
+                    {
+                        "error": (
+                            "Quantized 27B CPU model is not configured. "
+                            "Open Settings -> MedGemma Model Parameters and set the GGUF path."
+                        ),
+                        "quantized_27b_missing": True,
+                        "details": str(e),
+                    },
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            if str(e).startswith("LLAMA_CPP_NOT_INSTALLED"):
+                return JSONResponse(
+                    {
+                        "error": (
+                            "Quantized 27B CPU backend is missing. "
+                            "Install llama-cpp-python and retry."
+                        ),
+                        "quantized_27b_backend_missing": True,
+                        "details": str(e),
+                    },
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                )
+            if str(e).startswith("GGUF_CONTEXT_TOO_SMALL") or str(e).startswith("GGUF_RUNTIME_ERROR") or str(e).startswith("GGUF_EMPTY_RESPONSE"):
+                return JSONResponse(
+                    {
+                        "error": (
+                            "Quantized 27B CPU runtime failed. "
+                            "Check quantized context/threads settings and model compatibility."
+                        ),
+                        "quantized_27b_runtime_error": True,
+                        "details": str(e),
+                    },
+                    status_code=status.HTTP_400_BAD_REQUEST,
                 )
             if "Missing model cache" in str(e) or str(e) in {"REMOTE_TOKEN_MISSING", "LOCAL_INFERENCE_DISABLED"}:
                 return JSONResponse(
@@ -4468,6 +4654,87 @@ def _resolve_local_model_dir(model_name: str):
     resolved = str(candidates[0]) if candidates else None
     _dbg(f"resolve_local_model_dir: model={model_name} resolved={resolved}")
     return resolved
+
+
+def _quantized_27b_candidate_paths(settings: Optional[dict] = None):
+    """
+    Build candidate GGUF paths for the optional 27B quantized CPU backend.
+    """
+    settings = settings or {}
+    configured_path = str(settings.get("q27b_gguf_path") or "").strip()
+    if configured_path:
+        yield Path(configured_path).expanduser()
+
+    env_path = (os.environ.get(QUANTIZED_27B_PATH_ENV) or "").strip()
+    if env_path:
+        yield Path(env_path).expanduser()
+
+    # Common defaults for local installs and copied model caches.
+    base_dirs = [
+        APP_HOME / "models",
+        APP_HOME / "models_quantized",
+        CACHE_DIR / "quantized",
+        CACHE_DIR,
+    ]
+    preferred_names = [
+        "medgemma-27b-q4_k_m.gguf",
+        "medgemma-27b-text-it-q4_k_m.gguf",
+        "google-medgemma-27b-text-it-q4_k_m.gguf",
+    ]
+    for root in base_dirs:
+        for name in preferred_names:
+            yield root / name
+
+    # Fallback glob scan in scoped directories only (non-recursive for speed).
+    for root in base_dirs:
+        if not root.exists():
+            continue
+        for path in sorted(root.glob("*medgemma*27b*.gguf"), reverse=True):
+            yield path
+
+
+def _resolve_quantized_27b_gguf_path(settings: Optional[dict] = None) -> Optional[Path]:
+    """
+    Resolve the first existing GGUF file path for quantized 27B CPU inference.
+    """
+    seen = set()
+    for candidate in _quantized_27b_candidate_paths(settings=settings):
+        try:
+            normalized = candidate.expanduser().resolve()
+        except Exception:
+            normalized = candidate
+        key = str(normalized)
+        if key in seen:
+            continue
+        seen.add(key)
+        if normalized.exists() and normalized.is_file():
+            return normalized
+    return None
+
+
+def _quantized_27b_status(settings: Optional[dict] = None):
+    """
+    Report readiness for the optional quantized 27B CPU model.
+    """
+    gguf_path = _resolve_quantized_27b_gguf_path(settings=settings)
+    if gguf_path is None:
+        return {
+            "installed": False,
+            "error": (
+                "Quantized 27B GGUF not found. Configure a GGUF path in "
+                "Settings -> MedGemma Model Parameters."
+            ),
+            "path": "",
+        }
+    try:
+        import llama_cpp  # noqa: F401
+    except Exception as exc:
+        return {
+            "installed": False,
+            "error": f"Install llama-cpp-python to run quantized 27B on CPU ({exc}).",
+            "path": str(gguf_path),
+        }
+    return {"installed": True, "error": "", "path": str(gguf_path)}
 
 
 def verify_required_models(download_missing: bool = False, force_download: bool = False):

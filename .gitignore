@@ -43,6 +43,7 @@ venv/
 # Keep primary app.db tracked for deployment/demo portability.
 app.db.*
 seed/*.db
+!seed/app.db
 not_needed/
 
 # Local scratch/export artifacts

@@ -125,12 +125,14 @@ const NO_LOCAL_MODELS_MESSAGE = 'No local MedGemma models are installed. Open Se
 const MODEL_CHOICES = [
     { value: 'google/medgemma-1.5-4b-it', label: 'medgemma-1.5-4b-it (local)' },
     { value: 'google/medgemma-27b-text-it', label: 'medgemma-27b-text-it (local)' },
+    { value: 'local/medgemma-27b-quantized-cpu', label: 'medgemma-27b-quantized-cpu (slow/deep)' },
 ];
+const REMOTE_MODEL_CHOICES = MODEL_CHOICES.filter((choice) => !String(choice.value || '').startsWith('local/'));
 
 let modelAvailabilityState = {
     loaded: false,
     hasAnyLocalModel: true,
-    availableModels: MODEL_CHOICES.map((m) => m.value),
+    availableModels: MODEL_CHOICES.filter((m) => !String(m.value || '').startsWith('local/')).map((m) => m.value),
     missingModels: [],
     inferenceMode: 'local',
     message: '',
@@ -196,7 +198,7 @@ function applyModelAvailabilityToSelects() {
     const availableSet = new Set(available);
     let activeChoices = MODEL_CHOICES.filter((choice) => availableSet.has(choice.value));
     if (String(modelAvailabilityState.inferenceMode || '').toLowerCase() === 'remote' && !activeChoices.length) {
-        activeChoices = MODEL_CHOICES.map((choice) => ({
+        activeChoices = REMOTE_MODEL_CHOICES.map((choice) => ({
             ...choice,
             label: String(choice.label || '').replace('(local)', '(remote)'),
         }));
@@ -1503,7 +1505,8 @@ async function submitChatMessage({ message, isStart, force28b = false, queueWait
         const modelLine = document.getElementById('chat-model-line');
         const etaLine = document.getElementById('chat-eta-line');
         if (modelLine) modelLine.textContent = `Model: ${modelName}`;
-        const avgMs = (chatMetrics[modelName]?.avg_ms) || (modelName.toLowerCase().includes('27b') ? 60000 : 20000);
+        const avgMs = (chatMetrics[modelName]?.avg_ms)
+            || (modelName === 'local/medgemma-27b-quantized-cpu' ? 3600000 : (modelName.toLowerCase().includes('27b') ? 60000 : 20000));
         if (etaLine) {
             const expectedSeconds = Math.max(1, Math.round(avgMs / 1000));
             let remainingSeconds = expectedSeconds;
@@ -1631,14 +1634,14 @@ async function submitChatMessage({ message, isStart, force28b = false, queueWait
                 }
             }
         } else if (res.confirm_28b) {
-            const ok = confirm(res.error || 'The 28B model on CPU can take an hour or more. Continue?');
+            const ok = confirm(res.error || 'The 27B model on CPU can take an hour or more. Continue?');
             if (ok) {
                 isProcessing = false;
                 updateUI();
                 return submitChatMessage({ message: txt, isStart, force28b: true });
             }
             if (display && normalizeMode(currentMode) === mode) {
-                display.innerHTML += `<div class="response-block" style="border-left-color:var(--red);"><b>INFO:</b> ${res.error || 'Cancelled running 28B model.'}</div>`;
+                display.innerHTML += `<div class="response-block" style="border-left-color:var(--red);"><b>INFO:</b> ${res.error || 'Cancelled running 27B model.'}</div>`;
             }
         } else if (res.error) {
             if (display && normalizeMode(currentMode) === mode) {
