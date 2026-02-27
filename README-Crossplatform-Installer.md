@@ -88,13 +88,14 @@ launch_windows_installer.cmd
 Steps:
 1. Open `SailingMedAdvisor-crossplatform` in File Explorer.
 2. Double-click `launch_windows_installer.cmd`.
-3. Follow prompts in the terminal window.
+3. The launcher runs a built-in installer self-test first.
+4. Follow prompts in the terminal window.
    - when asked for Hugging Face token, paste only the token value (starts with `hf_`)
-4. When setup finishes, start the app with:
+5. When setup finishes, start the app with:
    - `launch_windows_app.cmd`
-5. Open browser:
+6. Open browser:
    - `http://127.0.0.1:5000`
-6. In the app, verify model cache:
+7. In the app, verify model cache:
    - `Settings -> Offline Readiness Check -> Check cache status`
 
 ---

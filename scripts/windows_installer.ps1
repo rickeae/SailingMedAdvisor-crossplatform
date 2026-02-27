@@ -6,7 +6,8 @@
 # Program: Kaggle Impact Challenge
 # =============================================================================
 param(
-    [switch]$SkipModelDownload = $false
+    [switch]$SkipModelDownload = $false,
+    [switch]$SelfTest = $false
 )
 
 Set-StrictMode -Version Latest
@@ -272,6 +273,48 @@ function Install-PythonDeps {
     Write-Info "Installing CPU PyTorch..."
     & $PythonExe -m pip install torch --index-url https://download.pytorch.org/whl/cpu
     if ($LASTEXITCODE -ne 0) { throw "Failed installing CPU PyTorch." }
+}
+
+function Invoke-InstallerSelfTest {
+    Write-Section "Windows Installer Self-Test"
+    Write-Info "Running token parser and validation checks..."
+
+    $cases = @(
+        @{ Input = "hf_abcdefghijklmnop123456"; Expected = "hf_abcdefghijklmnop123456" },
+        @{ Input = "  hf_abcdefghijklmnop123456  "; Expected = "hf_abcdefghijklmnop123456" },
+        @{ Input = "'hf_abcdefghijklmnop123456'"; Expected = "hf_abcdefghijklmnop123456" },
+        @{ Input = '"hf_abcdefghijklmnop123456"'; Expected = "hf_abcdefghijklmnop123456" },
+        @{ Input = "token: hf_abcdefghijklmnop123456"; Expected = "hf_abcdefghijklmnop123456" },
+        @{ Input = "hf_abcdefghijklmnop123456 copied"; Expected = "hf_abcdefghijklmnop123456" },
+        @{ Input = ""; Expected = "" }
+    )
+
+    foreach ($case in $cases) {
+        $actual = Normalize-HfToken $case.Input
+        if ($actual -ne $case.Expected) {
+            throw "Self-test failed: Normalize-HfToken input '$($case.Input)' expected '$($case.Expected)' but got '$actual'."
+        }
+    }
+
+    if (-not ("hf_abcdefgh" -match '^hf_[^\s]{8,}$')) {
+        throw "Self-test failed: expected valid token pattern did not match."
+    }
+    if ("hf_bad token" -match '^hf_[^\s]{8,}$') {
+        throw "Self-test failed: invalid token pattern was accepted."
+    }
+
+    Write-Host "[INFO] Self-test passed." -ForegroundColor Green
+}
+
+if ($SelfTest) {
+    try {
+        Invoke-InstallerSelfTest
+        exit 0
+    }
+    catch {
+        Write-Host "[ERROR] Self-test failed: $($_.Exception.Message)" -ForegroundColor Red
+        exit 1
+    }
 }
 
 try {

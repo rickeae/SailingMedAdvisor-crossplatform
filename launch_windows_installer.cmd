@@ -5,6 +5,15 @@ cd /d "%~dp0"
 echo Starting SailingMedAdvisor Windows installer...
 set "INSTALLER_LOG=%~dp0windows_installer.log"
 echo Writing installer log to: %INSTALLER_LOG%
+echo Running installer self-test...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\windows_installer.ps1" -SelfTest
+if not "%ERRORLEVEL%"=="0" (
+  echo.
+  echo Installer self-test failed. See error output above.
+  echo.
+  pause
+  exit /b 1
+)
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\windows_installer.ps1"
 set EXIT_CODE=%ERRORLEVEL%
 
