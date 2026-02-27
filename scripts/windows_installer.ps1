@@ -210,14 +210,9 @@ function Validate-HfToken {
         [Parameter(Mandatory = $true)][string]$PythonExe,
         [Parameter(Mandatory = $true)][string]$Token
     )
-    $code = @'
-from huggingface_hub import HfApi
-import sys
-token = sys.argv[1].strip()
-api = HfApi(token=token)
-api.whoami()
-print("HF token OK")
-'@
+    # Keep this as a single-line script string. Multi-line -c text can be mangled
+    # by some Windows shells and cause confusing Python syntax errors.
+    $code = "from huggingface_hub import HfApi; import sys; token=sys.argv[1].strip(); HfApi(token=token).whoami(); print('HF token OK')"
     & $PythonExe -c $code $Token
     if ($LASTEXITCODE -ne 0) {
         throw "Hugging Face token validation failed. Confirm token, terms acceptance, and internet connectivity."
