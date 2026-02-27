@@ -38,7 +38,8 @@ function Install-ExecutableFromUrl {
     param(
         [Parameter(Mandatory = $true)][string]$Url,
         [Parameter(Mandatory = $true)][string]$FileName,
-        [Parameter(Mandatory = $true)][string]$DisplayName
+        [Parameter(Mandatory = $true)][string]$DisplayName,
+        [string[]]$InstallerArgs = @()
     )
     $tempDir = Join-Path $env:TEMP "sma_installer"
     New-Item -ItemType Directory -Force -Path $tempDir | Out-Null
@@ -51,7 +52,13 @@ function Install-ExecutableFromUrl {
         throw "Failed downloading $DisplayName installer from $Url"
     }
     Write-Info "Launching $DisplayName installer. Complete the installer, then return here."
-    Start-Process -FilePath $installerPath -Wait
+    $proc = Start-Process -FilePath $installerPath -ArgumentList $InstallerArgs -Wait -PassThru
+    if ($proc -and $null -ne $proc.ExitCode) {
+        $exitCode = [int]$proc.ExitCode
+        if ($exitCode -ne 0 -and $exitCode -ne 3010 -and $exitCode -ne 1638) {
+            throw "$DisplayName installer exited with code $exitCode"
+        }
+    }
     Start-Sleep -Seconds 2
     Refresh-ProcessPath
 }
@@ -100,36 +107,37 @@ function Test-VcRedistInstalled {
     return $false
 }
 
-function Ensure-VcRedistInstalled {
-    if (Test-VcRedistInstalled) {
+function Install-VcRedist {
+    param(
+        [bool]$ForceInstall = $false
+    )
+    if ((-not $ForceInstall) -and (Test-VcRedistInstalled)) {
         Write-Info "Microsoft Visual C++ Redistributable (x64) detected."
         return
     }
-
-    Write-WarnLine "Microsoft Visual C++ Redistributable (x64) is missing."
-    Write-WarnLine "PyTorch requires it on Windows."
-    if (-not (Test-Yes "Install Microsoft Visual C++ Redistributable (x64) now?" $true)) {
-        throw @(
-            "Microsoft Visual C++ Redistributable (x64) is required.",
-            "Install it from:",
-            "- https://aka.ms/vs/17/release/vc_redist.x64.exe",
-            "Then rerun launch_windows_installer.cmd."
-        ) -join [Environment]::NewLine
+    if (-not $ForceInstall) {
+        Write-WarnLine "Microsoft Visual C++ Redistributable (x64) is missing."
+        Write-WarnLine "PyTorch requires it on Windows."
+        if (-not (Test-Yes "Install Microsoft Visual C++ Redistributable (x64) now?" $true)) {
+            throw @(
+                "Microsoft Visual C++ Redistributable (x64) is required.",
+                "Install it from:",
+                "- https://aka.ms/vs/17/release/vc_redist.x64.exe",
+                "Then rerun launch_windows_installer.cmd."
+            ) -join [Environment]::NewLine
+        }
+    } else {
+        Write-WarnLine "Attempting forced Microsoft Visual C++ Redistributable (x64) install due to torch runtime failure..."
     }
-
     Install-ExecutableFromUrl `
         -Url "https://aka.ms/vs/17/release/vc_redist.x64.exe" `
         -FileName "vc_redist.x64.exe" `
-        -DisplayName "Microsoft Visual C++ Redistributable (x64)"
+        -DisplayName "Microsoft Visual C++ Redistributable (x64)" `
+        -InstallerArgs @("/install", "/passive", "/norestart")
+}
 
-    if (-not (Test-VcRedistInstalled)) {
-        throw @(
-            "Microsoft Visual C++ Redistributable (x64) still not detected after installer run.",
-            "Install it manually:",
-            "- https://aka.ms/vs/17/release/vc_redist.x64.exe",
-            "Then rerun launch_windows_installer.cmd."
-        ) -join [Environment]::NewLine
-    }
+function Ensure-VcRedistInstalled {
+    Install-VcRedist -ForceInstall $false
 }
 
 function Resolve-Python311Command {
@@ -363,7 +371,7 @@ function Ensure-TorchRuntimeReady {
     }
 
     try {
-        Ensure-VcRedistInstalled
+        Install-VcRedist -ForceInstall $true
         Test-TorchImport -PythonExe $PythonExe
         return
     }

@@ -36,6 +36,11 @@ if not "%ERRORLEVEL%"=="0" (
   ".venv\Scripts\python.exe" -c "import torch" >nul 2>&1
 )
 if not "%ERRORLEVEL%"=="0" (
+  echo [WARN] PyTorch still failing. Attempting Microsoft Visual C++ Redistributable install...
+  powershell -NoProfile -ExecutionPolicy Bypass -Command "$u='https://aka.ms/vs/17/release/vc_redist.x64.exe'; $p=Join-Path $env:TEMP 'vc_redist.x64.exe'; Invoke-WebRequest -Uri $u -OutFile $p -UseBasicParsing; $proc=Start-Process -FilePath $p -ArgumentList '/install','/passive','/norestart' -Wait -PassThru; exit $proc.ExitCode"
+  ".venv\Scripts\python.exe" -c "import torch" >nul 2>&1
+)
+if not "%ERRORLEVEL%"=="0" (
   echo.
   echo [ERROR] PyTorch failed to load.
   echo [ERROR] Install Microsoft Visual C++ Redistributable x64 and restart terminal:
