@@ -88,6 +88,10 @@ function Ensure-GitInstalled {
 
     Write-WarnLine "Git for Windows not detected."
     Write-WarnLine "Git is optional if you installed this project from a ZIP file."
+    if (-not (Test-Yes "Install Git now? (Recommended only if you want command-line updates from GitHub)" $false)) {
+        Write-WarnLine "Continuing without Git. This is fine for ZIP-based installs."
+        return $false
+    }
 
     try {
         Install-WithWinget -PackageId "Git.Git" -DisplayName "Git for Windows"
@@ -97,16 +101,18 @@ function Ensure-GitInstalled {
         Write-WarnLine $_.Exception.Message
     }
 
-    if (-not $gitCmd -and (Test-Yes "Download and run Git installer now?" $false)) {
-        Install-ExecutableFromUrl `
-            -Url "https://github.com/git-for-windows/git/releases/latest/download/Git-64-bit.exe" `
-            -FileName "Git-64-bit.exe" `
-            -DisplayName "Git for Windows"
-        $gitCmd = Get-Command git -ErrorAction SilentlyContinue
+    if (-not $gitCmd) {
+        if (Test-Yes "winget path failed. Download and run Git installer now?" $false) {
+            Install-ExecutableFromUrl `
+                -Url "https://github.com/git-for-windows/git/releases/latest/download/Git-64-bit.exe" `
+                -FileName "Git-64-bit.exe" `
+                -DisplayName "Git for Windows"
+            $gitCmd = Get-Command git -ErrorAction SilentlyContinue
+        }
     }
 
     if (-not $gitCmd) {
-        Write-WarnLine "Continuing without Git. This is fine for ZIP-based installs."
+        Write-WarnLine "Git is still not installed. Continuing without Git for ZIP-based setup."
         return $false
     }
     & git --version
