@@ -138,6 +138,10 @@ Steps:
 
 Windows:
 - If SmartScreen appears, choose `More info` -> `Run anyway`.
+- If you see `os error 1455` or `paging file is too small`, increase Windows virtual memory:
+  - Set paging file to minimum `32768 MB`, recommended `65536 MB`
+  - Open `System Properties -> Advanced -> Performance Settings -> Advanced -> Virtual memory`
+  - Reboot Windows, then rerun installer/app launcher
 
 macOS:
 - If Gatekeeper blocks a launcher, right-click the `.command` file and choose `Open`.

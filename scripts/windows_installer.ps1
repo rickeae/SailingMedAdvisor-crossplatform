@@ -335,8 +335,31 @@ function Test-TorchImport {
     param(
         [Parameter(Mandatory = $true)][string]$PythonExe
     )
-    & $PythonExe -c "import torch; print('TORCH_IMPORT_OK')"
+    $probeLog = Join-Path $env:TEMP "sma_torch_probe.log"
+    if (Test-Path $probeLog) {
+        Remove-Item $probeLog -Force -ErrorAction SilentlyContinue
+    }
+    & $PythonExe -c "import torch; print('TORCH_IMPORT_OK')" *> $probeLog
     if ($LASTEXITCODE -ne 0) {
+        $details = ""
+        try {
+            $details = (Get-Content -Path $probeLog -Raw -ErrorAction SilentlyContinue)
+        }
+        catch {
+            $details = ""
+        }
+        $detailsLower = ""
+        if (-not [string]::IsNullOrWhiteSpace($details)) {
+            $detailsLower = $details.ToLowerInvariant()
+        }
+        if ($detailsLower -like "*1455*" -or $detailsLower -like "*paging file is too small*") {
+            throw @(
+                "PyTorch import failed because Windows virtual memory (paging file) is too small (WinError 1455).",
+                "Set paging file to at least 32768 MB (recommended 65536 MB), then reboot.",
+                "Path: System Properties > Advanced > Performance Settings > Advanced > Virtual memory > Change.",
+                "After reboot, rerun launch_windows_installer.cmd."
+            ) -join [Environment]::NewLine
+        }
         throw @(
             "PyTorch import failed after install.",
             "On Windows this usually means Microsoft Visual C++ Redistributable (x64) is missing.",
@@ -367,6 +390,10 @@ function Ensure-TorchRuntimeReady {
         return
     }
     catch {
+        $msg = $_.Exception.Message
+        if ($msg -and (($msg.ToLowerInvariant() -like "*1455*") -or ($msg.ToLowerInvariant() -like "*paging file*"))) {
+            throw $msg
+        }
         Write-WarnLine "PyTorch runtime check failed. Attempting VC++ runtime repair..."
     }
 
