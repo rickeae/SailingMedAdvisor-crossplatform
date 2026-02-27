@@ -11,6 +11,8 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
+$script:TranscriptStarted = $false
+$script:InstallerLogPath = $null
 
 function Write-Section([string]$text) {
     Write-Host ""
@@ -272,6 +274,14 @@ function Install-PythonDeps {
 try {
     $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
     Set-Location $repoRoot
+    $script:InstallerLogPath = Join-Path $repoRoot "windows_installer.log"
+    try {
+        Start-Transcript -Path $script:InstallerLogPath -Force | Out-Null
+        $script:TranscriptStarted = $true
+    }
+    catch {
+        Write-WarnLine "Could not start transcript logging. Continuing without transcript."
+    }
 
     Write-Section "SailingMedAdvisor Windows Installer"
     Write-Info "Repository root: $repoRoot"
@@ -384,5 +394,13 @@ catch {
         Write-Host "[ERROR] Stack: $($_.ScriptStackTrace)" -ForegroundColor DarkRed
     }
     Write-Host "Installer stopped. Fix the issue above and rerun launch_windows_installer.cmd." -ForegroundColor Red
+    if ($script:TranscriptStarted) {
+        try { Stop-Transcript | Out-Null } catch {}
+    }
     exit 1
+}
+finally {
+    if ($script:TranscriptStarted) {
+        try { Stop-Transcript | Out-Null } catch {}
+    }
 }
