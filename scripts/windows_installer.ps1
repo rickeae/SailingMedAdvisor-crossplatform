@@ -339,6 +339,22 @@ function Test-TorchImport {
     }
 }
 
+function Ensure-TorchRuntimeReady {
+    param(
+        [Parameter(Mandatory = $true)][string]$PythonExe
+    )
+    try {
+        Test-TorchImport -PythonExe $PythonExe
+        return
+    }
+    catch {
+        Write-WarnLine "PyTorch runtime check failed. Attempting VC++ runtime repair..."
+    }
+
+    Ensure-VcRedistInstalled
+    Test-TorchImport -PythonExe $PythonExe
+}
+
 function Invoke-InstallerSelfTest {
     Write-Section "Windows Installer Self-Test"
     Write-Info "Running token parser and validation checks..."
@@ -418,7 +434,7 @@ try {
     }
 
     Install-PythonDeps -PythonExe $venvPython
-    Test-TorchImport -PythonExe $venvPython
+    Ensure-TorchRuntimeReady -PythonExe $venvPython
 
     Write-Section "Hugging Face Setup"
     Write-Host "Before continuing, you must accept MedGemma terms on:" -ForegroundColor White
