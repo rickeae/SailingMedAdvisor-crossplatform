@@ -38,7 +38,7 @@ if not "%ERRORLEVEL%"=="0" (
 if not "%ERRORLEVEL%"=="0" (
   echo.
   echo [ERROR] PyTorch failed to load.
-  echo [ERROR] Install Microsoft Visual C++ Redistributable (x64), then restart terminal:
+  echo [ERROR] Install Microsoft Visual C++ Redistributable x64 and restart terminal:
   echo [ERROR] https://aka.ms/vs/17/release/vc_redist.x64.exe
   echo [ERROR] Then rerun launch_windows_installer.cmd and start again.
   echo.
