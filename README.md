@@ -71,8 +71,8 @@ Platform installer guide:
 - `README-Crossplatform-Installer.md`
 
 One installer script per platform:
-- Windows: `launch_windows_bootstrap.cmd`
-- macOS: `launch_macos_bootstrap.command`
+- Windows: `launch_windows_installer.cmd`
+- macOS: `launch_macos_installer.command`
 
 ## Demo Reproduction (27B scenario)
 

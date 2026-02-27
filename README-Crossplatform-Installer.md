@@ -76,12 +76,12 @@ __        ___ _   _ ____   _____        _____
 Use this one installer script:
 
 ```bat
-launch_windows_bootstrap.cmd
+launch_windows_installer.cmd
 ```
 
 Steps:
 1. Open `SailingMedAdvisor-crossplatform` in File Explorer.
-2. Double-click `launch_windows_bootstrap.cmd`.
+2. Double-click `launch_windows_installer.cmd`.
 3. Follow prompts in the terminal window.
 4. When setup finishes, start the app with:
    - `launch_windows_app.cmd`
@@ -105,12 +105,12 @@ Steps:
 Use this one installer script:
 
 ```bash
-./launch_macos_bootstrap.command
+./launch_macos_installer.command
 ```
 
 Steps:
 1. Open `SailingMedAdvisor-crossplatform` in Finder.
-2. Double-click `launch_macos_bootstrap.command`.
+2. Double-click `launch_macos_installer.command`.
 3. If blocked, right-click -> `Open` -> `Open`.
 4. Follow prompts in the terminal window.
 5. When setup finishes, start the app with:

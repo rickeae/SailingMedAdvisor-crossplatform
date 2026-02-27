@@ -12,7 +12,7 @@ cd "$(dirname "$0")"
 
 if [[ ! -x ".venv/bin/python" ]]; then
   echo "[ERROR] Python virtual environment not found."
-  echo "Run launch_macos_bootstrap.command first."
+  echo "Run launch_macos_installer.command first."
   echo
   read -r -n 1 -s -p "Press any key to close..."
   echo

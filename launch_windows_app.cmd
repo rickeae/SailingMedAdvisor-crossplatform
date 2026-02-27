@@ -4,7 +4,7 @@ cd /d "%~dp0"
 
 if not exist ".venv\Scripts\python.exe" (
   echo [ERROR] Python virtual environment not found.
-  echo Run launch_windows_bootstrap.cmd first.
+  echo Run launch_windows_installer.cmd first.
   echo.
   pause
   exit /b 1
