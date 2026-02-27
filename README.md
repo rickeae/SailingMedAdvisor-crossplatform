@@ -11,6 +11,22 @@ pinned: false
 
 Offline-first emergency decision support for offshore crews, using Google MedGemma models with a structured triage workflow.
 
+## Project Banner
+
+| Field | Details |
+| --- | --- |
+| Project | `SailingMedAdvisor` (MedSailingAdvisor) |
+| Maintainer | Rick Escher |
+| Blog | [www.aphrodite.cat](https://www.aphrodite.cat) |
+| Email | [rick@escher.ca](mailto:rick@escher.ca) |
+| WhatsApp | +1-613-729-7579 (Canada) |
+| Framework | Google HAI-DEF |
+| Models | Google MedGemma (`4B` and `27B`) |
+| Challenge Context | Kaggle MedGemma Impact Challenge |
+| Primary Stack | FastAPI, SQLite, HTML/CSS/JavaScript |
+| Deployment Modes | Local edge runtime, Hugging Face demo mode |
+| License | CC BY 4.0 (`LICENSE`) |
+
 ## What This Repository Contains
 
 This repository contains the active application code and core runtime assets for:
@@ -38,8 +54,11 @@ Non-project scratch/export artifacts have been removed from version control.
 
 - `google/medgemma-1.5-4b-it`
 - `google/medgemma-27b-text-it` (runtime adapter file: `medgemma27b.py`)
+- Optional slow/deep CPU path: `local/medgemma-27b-quantized-cpu` (GGUF + `llama-cpp-python`)
 
 Both model paths are wired to use settings-defined sampling/token parameters.
+
+For licensing safety, distribute code only and have each user download/convert models locally after accepting MedGemma terms.
 
 ## Quick Start
 
@@ -54,6 +73,12 @@ source .venv/bin/activate
 
 ```bash
 pip install -r requirements.txt
+```
+
+Optional (only if you want quantized 27B CPU mode):
+
+```bash
+pip install llama-cpp-python
 ```
 
 3. Start the app:
@@ -73,6 +98,18 @@ Portable startup (works on machines without a working GPU):
 ```bash
 FORCE_CUDA=0 ALLOW_CPU_FALLBACK_ON_CUDA_ERROR=1 ./run_med_advisor.sh
 ```
+
+To enable the quantized 27B CPU model in the dropdown, configure it in:
+
+- `Settings -> MedGemma Model Parameters -> Quantized 27B CPU (Optional)`
+
+You can still use an environment variable fallback if needed:
+
+```bash
+export MEDGEMMA_27B_GGUF_PATH=/absolute/path/to/your/medgemma-27b-*.gguf
+```
+
+If no GGUF path is configured (or the file is missing), the quantized option stays unavailable.
 
 ## Fresh Install On A New Computer (Contest Repro Path)
 
@@ -122,6 +159,12 @@ Credentials are managed from the app UI (Vessel & Crew / Settings flows).
 
 - Primary runtime data is stored in `app.db`.
 - Default dataset JSONs live in `data/default/` and are used for baseline content and seeding support.
+
+To regenerate a clean population database for fresh installs (keep prompts/settings, clear consultation/inventory/crew/vessel/last-prompt):
+
+```bash
+python3 scripts/prepare_population_db.py app.db seed/app.db
+```
 
 ## Repository Layout (Primary)
 
