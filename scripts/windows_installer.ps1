@@ -64,7 +64,6 @@ function Install-WithWinget {
             "winget is not available in this environment.",
             "Install $DisplayName manually, then rerun launch_windows_installer.cmd.",
             "Manual install links:",
-            "- Git: https://git-scm.com/download/win",
             "- Python 3.11 (64-bit): https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe",
             "If you are using Windows Sandbox, this is expected on some images."
         ) -join [Environment]::NewLine
@@ -77,46 +76,6 @@ function Install-WithWinget {
     }
     Start-Sleep -Seconds 2
     Refresh-ProcessPath
-}
-
-function Ensure-GitInstalled {
-    $gitCmd = Get-Command git -ErrorAction SilentlyContinue
-    if ($gitCmd) {
-        & git --version
-        return $true
-    }
-
-    Write-WarnLine "Git for Windows not detected."
-    Write-WarnLine "Git is optional if you installed this project from a ZIP file."
-    if (-not (Test-Yes "Install Git now? (Recommended only if you want command-line updates from GitHub)" $false)) {
-        Write-WarnLine "Continuing without Git. This is fine for ZIP-based installs."
-        return $false
-    }
-
-    try {
-        Install-WithWinget -PackageId "Git.Git" -DisplayName "Git for Windows"
-        $gitCmd = Get-Command git -ErrorAction SilentlyContinue
-    }
-    catch {
-        Write-WarnLine $_.Exception.Message
-    }
-
-    if (-not $gitCmd) {
-        if (Test-Yes "winget path failed. Download and run Git installer now?" $false) {
-            Install-ExecutableFromUrl `
-                -Url "https://github.com/git-for-windows/git/releases/latest/download/Git-64-bit.exe" `
-                -FileName "Git-64-bit.exe" `
-                -DisplayName "Git for Windows"
-            $gitCmd = Get-Command git -ErrorAction SilentlyContinue
-        }
-    }
-
-    if (-not $gitCmd) {
-        Write-WarnLine "Git is still not installed. Continuing without Git for ZIP-based setup."
-        return $false
-    }
-    & git --version
-    return $true
 }
 
 function Resolve-Python311Command {
@@ -188,7 +147,7 @@ function Ensure-Python311Installed {
         ) -join [Environment]::NewLine
     }
     $probeArgs = @() + $resolved.PrefixArgs + @("--version")
-    & $resolved.Launcher @probeArgs
+    & $resolved.Launcher @probeArgs | Out-Null
     return $resolved
 }
 
@@ -269,16 +228,7 @@ try {
     Write-Info "This script installs dependencies, configures Hugging Face login, and downloads MedGemma models."
 
     Write-Section "Preflight Checks"
-    $hasGitMetadata = Test-Path (Join-Path $repoRoot ".git")
-    if ($hasGitMetadata) {
-        $hasGit = Ensure-GitInstalled
-        if (-not $hasGit) {
-            Write-WarnLine "Proceeding without Git."
-        }
-    }
-    else {
-        Write-Info "ZIP install detected (.git not present). Skipping Git preflight."
-    }
+    Write-Info "Git is not required for this installer (ZIP-based workflow)."
     $pythonSpec = Ensure-Python311Installed
     Write-Info "Using Python launcher: $($pythonSpec.Launcher) $($pythonSpec.PrefixArgs -join ' ')"
 
