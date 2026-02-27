@@ -269,9 +269,15 @@ try {
     Write-Info "This script installs dependencies, configures Hugging Face login, and downloads MedGemma models."
 
     Write-Section "Preflight Checks"
-    $hasGit = Ensure-GitInstalled
-    if (-not $hasGit) {
-        Write-WarnLine "Proceeding without Git."
+    $hasGitMetadata = Test-Path (Join-Path $repoRoot ".git")
+    if ($hasGitMetadata) {
+        $hasGit = Ensure-GitInstalled
+        if (-not $hasGit) {
+            Write-WarnLine "Proceeding without Git."
+        }
+    }
+    else {
+        Write-Info "ZIP install detected (.git not present). Skipping Git preflight."
     }
     $pythonSpec = Ensure-Python311Installed
     Write-Info "Using Python launcher: $($pythonSpec.Launcher) $($pythonSpec.PrefixArgs -join ' ')"
