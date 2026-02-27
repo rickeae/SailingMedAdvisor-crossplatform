@@ -43,12 +43,13 @@ You need:
    - `https://huggingface.co/google/medgemma-1.5-4b-it`
    - `https://huggingface.co/google/medgemma-27b-text-it`
 4. A Hugging Face token (Read scope):
-   - `https://huggingface.co/settings/tokens`
-   create new token
-   read
-   name, like medgemma, for example
-   create token
-   save to a text file on disk because it wont be shown again
+   - Open: `https://huggingface.co/settings/tokens`
+   - Click: `Create new token`
+   - In `Token name`, enter a name (example: `medgemma`)
+   - In permissions/scope, select: `Read`
+   - Click: `Create token`
+   - Immediately copy the full token (starts with `hf_`) and save it in a local text file.
+   - Important: Hugging Face will not show the full token again later.
 
 The installer script will ask for the token when needed.
 
