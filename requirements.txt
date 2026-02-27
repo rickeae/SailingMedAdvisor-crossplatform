@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+jinja2
+python-multipart
+aiofiles
+pillow
+torch
+transformers
+bitsandbytes
+accelerate
+safetensors
+huggingface-hub
+itsdangerous

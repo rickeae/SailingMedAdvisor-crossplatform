@@ -1,0 +1,20 @@
+<!-- =============================================================================
+     Author: Rick Escher
+     Project: SailingMedAdvisor
+     Context: Google HAI-DEF Framework
+     Models: Google MedGemmas
+     Program: Kaggle Impact Challenge
+     ========================================================================== -->
+<div class="dev-tag">dev:sidebar-chat</div>
+<div class="sidebar-section">
+    <div class="sidebar-title"><span class="sidebar-pill">MedGemma Consultation</span> Agentic Decision Support</div>
+    <div class="sidebar-body">
+        <strong>Purpose:</strong> This workspace facilitates high-fidelity inference using an Agentic Workflow to bridge the gap between raw LLM output and clinical utility. By bifurcating the logic into Triage and Inquiry modes, the system applies specific system-level constraints to the MedGemma models. This is the primary interface for active model selection, allowing the operator to toggle between the 4B model, optimized for rapid, efficient processing on local hardware, and the 27B model, optimized for deep, complex reasoning.
+    </div>
+</div>
+<div class="sidebar-section">
+    <div class="sidebar-title">Operational Logic</div>
+    <div class="sidebar-body">
+        The "Dynamic Prompt Assembly" panel allows for real-time auditing of the Chain-of-Thought reasoning. By dynamically assembling vessel-specific variables into the context window, we ensure that the model's Novel Task execution, specifically Maritime Emergency Medicine, is grounded in the immediate operational reality of the vessel. The performance of these models is further governed by the MedGemma Model Parameters established in the global configuration, ensuring that token allocation and response behavior are optimized for the selected mode.
+    </div>
+</div>

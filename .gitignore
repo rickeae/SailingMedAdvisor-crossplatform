@@ -1,0 +1,56 @@
+# --- Existing entries ---
+.env.*
+data/
+datasets/
+outputs/
+runs/
+wandb/
+mlruns/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+
+# --- New FastAPI/Python Additions ---
+venv/
+.env
+__pycache__/
+*.pyc
+.pytest_cache/
+.vscode/
+.codium/
+
+# --- Data logic (Keep as is if you want JSONs in Gitea) ---
+data/*
+!data/.gitkeep
+!data/*.json
+!data/default/
+!data/default/*.json
+!data/default/uploads/
+!data/default/uploads/medicines/
+# Local secrets (keep out of version control)
+templates/sidebars/SailingMedAdvisorDeloy\ token\ Huggingface
+
+# Local virtualenvs
+.venv/
+venv/
+# Editor/temp artifacts
+*.swp
+
+# Local DB/runtime artifacts
+# Keep primary app.db tracked for deployment/demo portability.
+app.db.*
+seed/*.db
+not_needed/
+
+# Local scratch/export artifacts
+server.log
+Untitled Folder/
+*_export_text.txt
+consumables
+consumables to import.txt
+non-consumables to import.txt
+who list for import.txt
+copy_pharm_lorraine_to_rick.sh

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<!-- =============================================================================
+     Author: Rick Escher
+     Project: SailingMedAdvisor
+     Context: Google HAI-DEF Framework
+     Models: Google MedGemmas
+     Program: Kaggle Impact Challenge
+     ========================================================================== -->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - MedGemma Master</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <style>
+        :root { --frame-padding: 8px; --frame-width: min(calc(100vw - (var(--frame-padding) * 2)), calc((100vh - (var(--frame-padding) * 2)) * 16 / 9)); --frame-height: min(calc(100vh - (var(--frame-padding) * 2)), calc((100vw - (var(--frame-padding) * 2)) * 9 / 16)); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; }
+        body {
+            font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at 30% 30%, #7452B9 0%, #6143a1 55%, #4b3283 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--frame-padding);
+            color: #0f2145;
+            overflow: hidden;
+        }
+        .login-frame {
+            width: var(--frame-width);
+            height: auto;
+            max-width: calc(100vw - (var(--frame-padding) * 2));
+            max-height: calc(100vh - (var(--frame-padding) * 2));
+            aspect-ratio: 16 / 9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px 16px;
+        }
+        .login-container {
+            background: #ffffff;
+            border-radius: 18px;
+            box-shadow: 0 18px 48px rgba(0,0,0,0.18);
+            padding: 40px 40px 44px;
+            width: min(780px, 100%);
+            max-height: 100%;
+            overflow: auto;
+        }
+        .login-header { text-align: center; margin-bottom: 26px; }
+        .login-header h1 {
+            color: #7452B9; /* match snake graphic */
+            font-size: 36px;
+            font-weight: 800;
+            letter-spacing: -0.8px;
+        }
+        .login-header .tagline {
+            color: #203459;
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 4px;
+        }
+        .login-header .description {
+            color: #304467;
+            font-size: 16px;
+            line-height: 1.7;
+            text-align: left;
+            padding: 18px 16px;
+            background: #f5f9ff;
+            border: 1px solid #d4e3ff;
+            border-radius: 10px;
+            margin: 22px 0 10px;
+        }
+        .icon { font-size: 58px; margin-bottom: 12px; color: #7452B9; }
+        .form-group { margin-bottom: 18px; }
+        label { display:block; color:#1f2f4d; font-weight:700; margin-bottom:6px; font-size:14px;}
+        input[type="password"], input[type="text"] {
+            width: 100%;
+            padding: 13px 14px;
+            border: 2px solid #e1e6ef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="password"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #6a5cf0;
+            box-shadow: 0 0 0 3px rgba(106,92,240,0.15);
+        }
+        .btn-login {
+            width: 100%;
+            padding: 15px;
+            background: #7452B9; /* match snake graphic */
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 22px rgba(116,82,185,0.35); }
+        .btn-login:active { transform: translateY(0); }
+        .info-banner {
+            background:#e9f7ef;
+            border:1px solid #c5e4d3;
+            color:#1f6f3f;
+            border-radius:10px;
+            padding:12px 14px;
+            font-size:15px;
+            margin-bottom:18px;
+        }
+        .error-message {
+            background:#fee;
+            color:#c33;
+            padding:12px;
+            border-radius:10px;
+            margin-bottom:16px;
+            display:none;
+            font-size:14px;
+        }
+        .footer {
+            margin-top: 26px;
+            text-align: center;
+            color: #7f8fb3;
+            font-size: 13px;
+        }
+        @media (max-height: 760px) {
+            .login-frame { padding: 10px 12px; }
+            .login-container { padding: 22px 24px 24px; border-radius: 14px; }
+            .login-header { margin-bottom: 14px; }
+            .icon { font-size: 44px; margin-bottom: 8px; }
+            .login-header h1 { font-size: 30px; }
+            .login-header .tagline { font-size: 16px; }
+            .login-header .description {
+                font-size: 14px;
+                line-height: 1.45;
+                padding: 12px 12px;
+                margin: 14px 0 8px;
+            }
+            .form-group { margin-bottom: 12px; }
+            .btn-login { padding: 12px; font-size: 16px; }
+            .footer { margin-top: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-frame">
+    <div class="login-container">
+        <div class="login-header">
+            <div class="icon">⚕️</div>
+            <h1>SailingMedAdvisor</h1>
+            <p class="tagline">Offline emergency medical guidance for offshore sailors,<br>powered by MedGemma (HAI-DEF)</p>
+            <div class="description">
+                SailingMedAdvisor is a fully-offline, AI-assisted medical support system designed specifically for offshore sailing vessels operating without reliable internet access. It reflects the practical constraints of life at sea: a fixed crew, limited medical supplies, constrained hardware, and high-stress decision-making during medical events.
+            </div>
+        </div>
+
+        <div id="banner" class="info-banner" style="display:none;"></div>
+        <div id="error" class="error-message"></div>
+
+        <form id="loginForm">
+            <div class="form-group" id="user-row">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" required placeholder="Enter your username">
+            </div>
+            <div class="form-group" id="pass-row">
+                <label for="password">Access Password</label>
+                <input type="password" id="password" name="password" required autofocus placeholder="Enter your password">
+            </div>
+            <button type="submit" class="btn-login" id="login-btn">Enter System</button>
+        </form>
+
+        <div class="footer">
+            Crew credentials are managed on the Settings page under "Crew Login Credentials."
+        </div>
+    </div>
+    </div>
+
+    <script>
+        (function applyFreshReset() {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                if (!params.has('fresh')) return;
+                [
+                    'sailingmed:lastPrompt',
+                    'sailingmed:lastPatient',
+                    'sailingmed:lastChatMode',
+                    'sailingmed:promptPreviewOpen',
+                    'sailingmed:promptPreviewContent',
+                    'sailingmed:chatState',
+                    'triage-pathway-open',
+                    'sailingmed:loggingOff',
+                    'sailingmed:sidebarCollapsed',
+                ].forEach((k) => localStorage.removeItem(k));
+                localStorage.setItem('sailingmed:sidebarCollapsed', '0');
+                localStorage.setItem('sailingmed:skipLastChat', '1');
+                sessionStorage.clear();
+                if (window.history && window.history.replaceState) {
+                    window.history.replaceState({}, document.title, '/login');
+                }
+            } catch (_) { /* ignore */ }
+        })();
+
+        const form = document.getElementById('loginForm');
+        const errorDiv = document.getElementById('error');
+        const passwordInput = document.getElementById('password');
+        const usernameInput = document.getElementById('username');
+        const userRow = document.getElementById('user-row');
+        const passRow = document.getElementById('pass-row');
+        const loginBtn = document.getElementById('login-btn');
+        const banner = document.getElementById('banner');
+        let credentialsRequired = true;
+
+        async function hydrateAuthUI() {
+            try {
+                const meta = await (await fetch('/api/auth/meta', { credentials: 'same-origin' })).json();
+                credentialsRequired = !!meta.has_credentials;
+                if (!credentialsRequired) {
+                    userRow.style.display = 'none';
+                    passRow.style.display = 'none';
+                    usernameInput.required = false;
+                    passwordInput.required = false;
+                    loginBtn.textContent = 'Enter System';
+                    banner.style.display = 'block';
+                    banner.textContent = "Click Enter System to proceed. Configure crew login credentials in Settings.";
+                    banner.style.textAlign = 'center';
+                } else {
+                    banner.style.display = 'none';
+                }
+            } catch (e) {
+                // If meta fails, fall back to showing the form
+                console.warn('Auth meta fetch failed', e);
+            }
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorDiv.style.display = 'none';
+            
+            const password = passwordInput.value;
+            const username = usernameInput.value;
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    window.location.href = '/';
+                } else {
+                    errorDiv.textContent = data.error || 'Invalid password';
+                    errorDiv.style.display = 'block';
+                    passwordInput.value = '';
+                    usernameInput.focus();
+                }
+            } catch (error) {
+                errorDiv.textContent = 'Connection error. Please try again.';
+                errorDiv.style.display = 'block';
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            if (typeof form.requestSubmit === 'function') {
+                form.requestSubmit();
+            } else {
+                loginBtn.click();
+            }
+        });
+
+        hydrateAuthUI();
+    </script>
+</body>
+</html>
