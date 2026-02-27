@@ -339,6 +339,17 @@ function Test-TorchImport {
     }
 }
 
+function Install-MsvcRuntimePythonPackage {
+    param(
+        [Parameter(Mandatory = $true)][string]$PythonExe
+    )
+    Write-Info "Installing Python msvc-runtime fallback package..."
+    & $PythonExe -m pip install --upgrade msvc-runtime
+    if ($LASTEXITCODE -ne 0) {
+        Write-WarnLine "Could not install msvc-runtime package automatically."
+    }
+}
+
 function Ensure-TorchRuntimeReady {
     param(
         [Parameter(Mandatory = $true)][string]$PythonExe
@@ -351,7 +362,16 @@ function Ensure-TorchRuntimeReady {
         Write-WarnLine "PyTorch runtime check failed. Attempting VC++ runtime repair..."
     }
 
-    Ensure-VcRedistInstalled
+    try {
+        Ensure-VcRedistInstalled
+        Test-TorchImport -PythonExe $PythonExe
+        return
+    }
+    catch {
+        Write-WarnLine "VC++ runtime repair path did not resolve torch import."
+    }
+
+    Install-MsvcRuntimePythonPackage -PythonExe $PythonExe
     Test-TorchImport -PythonExe $PythonExe
 }
 
