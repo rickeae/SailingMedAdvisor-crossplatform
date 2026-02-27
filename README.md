@@ -15,7 +15,7 @@ Offline-first emergency decision support for offshore crews, using Google MedGem
 
 | Field | Details |
 | --- | --- |
-| Project | `SailingMedAdvisor` (MedSailingAdvisor) |
+| Project | `SailingMedAdvisor` |
 | Maintainer | Rick Escher |
 | Blog | [www.aphrodite.cat](https://www.aphrodite.cat) |
 | Email | [rick@escher.ca](mailto:rick@escher.ca) |
@@ -60,82 +60,19 @@ Both model paths are wired to use settings-defined sampling/token parameters.
 
 For licensing safety, distribute code only and have each user download/convert models locally after accepting MedGemma terms.
 
-## Quick Start
+## Quick Start (Single Install Path)
 
-1. Create and activate a virtual environment:
+For end users, installation is intentionally simple:
+- Download ZIP from this repository.
+- Extract ZIP.
+- Run one installer script for your platform.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-```
+Platform installer guide:
+- `README-Crossplatform-Installer.md`
 
-2. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-Optional (only if you want quantized 27B CPU mode):
-
-```bash
-pip install llama-cpp-python
-```
-
-3. Start the app:
-
-```bash
-chmod +x run_med_advisor.sh
-./run_med_advisor.sh
-```
-
-4. Open:
-
-- Local: `http://127.0.0.1:5000`
-- LAN: `http://<your-machine-ip>:5000`
-
-Portable startup (works on machines without a working GPU):
-
-```bash
-FORCE_CUDA=0 ALLOW_CPU_FALLBACK_ON_CUDA_ERROR=1 ./run_med_advisor.sh
-```
-
-To enable the quantized 27B CPU model in the dropdown, configure it in:
-
-- `Settings -> MedGemma Model Parameters -> Quantized 27B CPU (Optional)`
-
-You can still use an environment variable fallback if needed:
-
-```bash
-export MEDGEMMA_27B_GGUF_PATH=/absolute/path/to/your/medgemma-27b-*.gguf
-```
-
-If no GGUF path is configured (or the file is missing), the quantized option stays unavailable.
-
-## Fresh Install On A New Computer (Contest Repro Path)
-
-Use the installer script to set up and verify a new machine:
-
-```bash
-git clone https://github.com/rickeae/SailingMedAdvisor.git
-cd SailingMedAdvisor
-chmod +x scripts/install_fresh_copy.sh
-./scripts/install_fresh_copy.sh --skip-clone
-```
-
-For full instructions and troubleshooting, see `docs/FRESH_INSTALL.md`.
-
-You can re-run the deterministic installation verification at any time:
-
-```bash
-./.venv/bin/python scripts/verify_fresh_install.py
-```
-
-For a clean Ubuntu 24.04 environment, you can run the all-in-one bootstrap script:
-
-```bash
-chmod +x scripts/bootstrap_ubuntu24_sailingmedadvisor.sh
-./scripts/bootstrap_ubuntu24_sailingmedadvisor.sh
-```
+One installer script per platform:
+- Windows: `launch_windows_bootstrap.cmd`
+- macOS: `launch_macos_bootstrap.command`
 
 ## Demo Reproduction (27B scenario)
 
