@@ -179,30 +179,38 @@ function Normalize-HfToken([string]$raw) {
         return ""
     }
     $token = $raw.Trim().Trim('"').Trim("'")
+    # Remove non-printable characters often introduced by copy/paste.
+    $token = [regex]::Replace($token, "[^\x20-\x7E]", "")
+    # Try to extract token from pasted surrounding text like:
+    # "token: hf_xxx..." or "hf_xxx copied"
+    $m = [regex]::Match($token, '(hf_\S+)')
+    if ($m.Success) {
+        return $m.Groups[1].Value.Trim()
+    }
+    # Fallback: if there is whitespace, keep first chunk.
     if ($token -match "\s") {
         $parts = $token -split "\s+"
-        if ($parts.Count -gt 0) {
-            $token = $parts[0]
-        }
+        if ($parts.Count -gt 0) { return $parts[0] }
     }
-    return $token
+    return $token.Trim()
 }
 
 function Read-HfTokenWithValidation {
-    for ($attempt = 1; $attempt -le 3; $attempt++) {
+    for ($attempt = 1; $attempt -le 5; $attempt++) {
         $raw = Read-SecretToken "Paste your Hugging Face token only (starts with hf_)"
         $token = Normalize-HfToken $raw
         if ([string]::IsNullOrWhiteSpace($token)) {
             Write-WarnLine "No token detected. Paste only the token string."
             continue
         }
-        if (-not ($token -match '^hf_[A-Za-z0-9]{20,}$')) {
+        if (-not ($token -match '^hf_[^\s]{8,}$')) {
             Write-WarnLine "Token format looks invalid. It should start with hf_ and contain no spaces."
+            Write-WarnLine "If you pasted extra text, paste only the token itself."
             continue
         }
         return $token
     }
-    throw "Token entry failed after 3 attempts."
+    throw "Token entry failed after multiple attempts."
 }
 
 function Validate-HfToken {
