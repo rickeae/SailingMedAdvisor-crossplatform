@@ -377,6 +377,12 @@ try {
 catch {
     Write-Host ""
     Write-Host "[ERROR] $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.InvocationInfo -and $_.InvocationInfo.PositionMessage) {
+        Write-Host "[ERROR] Location: $($_.InvocationInfo.PositionMessage)" -ForegroundColor Red
+    }
+    if ($_.ScriptStackTrace) {
+        Write-Host "[ERROR] Stack: $($_.ScriptStackTrace)" -ForegroundColor DarkRed
+    }
     Write-Host "Installer stopped. Fix the issue above and rerun launch_windows_installer.cmd." -ForegroundColor Red
     exit 1
 }

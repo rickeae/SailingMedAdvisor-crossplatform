@@ -3,12 +3,16 @@ setlocal
 cd /d "%~dp0"
 
 echo Starting SailingMedAdvisor Windows installer...
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\windows_installer.ps1"
+set "INSTALLER_LOG=%~dp0windows_installer.log"
+echo Writing installer log to: %INSTALLER_LOG%
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\windows_installer.ps1" > "%INSTALLER_LOG%" 2>&1
 set EXIT_CODE=%ERRORLEVEL%
 
 if not "%EXIT_CODE%"=="0" (
   echo.
   echo Installer failed with exit code %EXIT_CODE%.
+  echo Showing last 40 log lines:
+  powershell -NoProfile -Command "Get-Content -Path '%INSTALLER_LOG%' -Tail 40"
 ) else (
   echo.
   echo Installer finished successfully.
