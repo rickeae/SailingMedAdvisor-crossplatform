@@ -1,4 +1,4 @@
-# SailingMedAdvisor Windows Install / Uninstall Guide
+# SailingMedAdvisor Windows + macOS Install / Uninstall Guide
 
 ## Project Banner
 
@@ -16,10 +16,11 @@
 | Deployment Modes | Local edge runtime, Hugging Face demo mode |
 | License | CC BY 4.0 (`LICENSE`) |
 
-This guide is for a brand-new Windows machine with none of the required software installed.
+This guide is for a brand-new Windows or macOS machine with none of the required software installed.
 
 Scope:
 - Windows 10/11 (64-bit)
+- macOS (Intel and Apple Silicon)
 - CPU-first setup
 - Local model download from Hugging Face after user accepts MedGemma terms
 
@@ -91,7 +92,7 @@ Compatibility note:
 ### 2.0 What is Command Prompt and how to open it
 **Command Prompt** is a Windows text window where you type commands (instead of clicking buttons).
 For this automated install, you mainly use double-click launchers.  
-Command Prompt is only needed if you want to run quick checks manually.
+You will still do a small amount of command-line work for quick checks and, if needed, fallback troubleshooting steps.
 
 How to open Command Prompt:
 1. Click the **Start** button (Windows logo).
@@ -108,9 +109,11 @@ You should see a black or dark window with a blinking cursor, ready for typing.
 ### 2.1 Step-by-step install instructions
 1. Install Python 3.11 (64-bit):
    - Download the Python runtime installer (`.exe`):
-     - `https://www.python.org/ftp/python/3.11.14/python-3.11.14-amd64.exe`
+     - `https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
    - Run the installer.
-   - During installer setup, check **Add Python to PATH**.
+   
+   - Check **Add Python to PATH**, which is towards the bottom of the first screen.
+   - Click Install Now.
    - If you downloaded `python-manager-*.msix` by mistake, ignore it and use the `.exe` link above.
    - Optional quick check in Command Prompt:
      - `py -3.11 --version`
@@ -189,7 +192,7 @@ Meaning: Windows package manager is unavailable on this machine.
 Fix:
 - install Git manually from `https://git-scm.com/download/win`
 - install Python 3.11 manually using:
-  - `https://www.python.org/ftp/python/3.11.14/python-3.11.14-amd64.exe`
+  - `https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
 - rerun bootstrap, or use Appendix A manual path
 - this is common in some Windows Sandbox images
 - if the project was installed from ZIP, you can continue without Git
@@ -200,7 +203,7 @@ Fix:
 - ignore/remove the `.msix` file
 - install Python 3.11 using one of these:
   - `winget install --id Python.Python.3.11 -e`
-  - `https://www.python.org/ftp/python/3.11.14/python-3.11.14-amd64.exe`
+  - `https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
 - verify with:
   - `py -3.11 --version`
 
@@ -213,10 +216,100 @@ Fix:
 ---
 
 ## =====================================================
-## Appendix A - Manual Install Instructions
+## 5) macOS Install Everything (Automated, Recommended)
+## =====================================================
+This section is the macOS equivalent of Section 2.
+It uses double-click launchers and guided prompts, with fallback instructions for older Macs.
+
+### 5.0 What is Terminal and how to open it
+**Terminal** is the macOS command window where you type commands.
+For this automated flow, you mostly use double-click launchers, but Terminal may open automatically and ask for simple input.
+
+How to open Terminal:
+1. Press `Command + Space`.
+2. Type `Terminal`.
+3. Press **Enter**.
+
+### 5.1 Step-by-step macOS install
+1. Download the project ZIP:
+   - `https://github.com/rickeae/SailMedAdvisor-crossplatform`
+   - Click **Code** -> **Download ZIP**
+2. Extract the ZIP and open the extracted folder.
+3. Run the macOS bootstrap launcher:
+   - Double-click `launch_macos_bootstrap.command`
+4. If macOS blocks it:
+   - Right-click `launch_macos_bootstrap.command` -> **Open** -> **Open**
+5. Follow on-screen prompts:
+   - install missing dependencies if prompted (Xcode Command Line Tools / Homebrew / Python 3.11)
+   - accept MedGemma terms confirmation
+   - enter Hugging Face token
+   - choose 4B-only or 4B+27B download
+6. Start the app:
+   - Double-click `launch_macos_app.command`
+7. Open in browser:
+   - `http://127.0.0.1:5000`
+8. Validate readiness:
+   - Settings -> Offline Readiness Check -> Check cache status
+
+What the macOS bootstrap does automatically:
+- checks for Xcode Command Line Tools
+- installs or finds Python 3.11
+- creates/reuses `.venv`
+- installs Python dependencies
+- logs into Hugging Face CLI using your token
+- downloads MedGemma models to `data/models_cache/hub`
+- optionally installs `llama-cpp-python` for quantized 27B CPU mode
+- writes `.env.macos` with CPU-safe defaults
+
+### 5.2 macOS uninstall
+1. Open project folder.
+2. Double-click `launch_macos_uninstall.command`.
+3. Answer the Yes/No prompts.
+
+---
+
+## =====================================================
+## 6) macOS Quick Troubleshooting
 ## =====================================================
 
-These are the full manual steps (kept intentionally for users who want full control).
+### macOS says file cannot be opened
+Meaning: Gatekeeper blocked an unsigned script.
+Fix:
+- Right-click the `.command` file -> **Open** -> **Open**
+
+### `xcode-select` prompt appears
+Meaning: Command Line Tools are missing.
+Fix:
+- Complete the Apple installer prompt
+- Rerun `launch_macos_bootstrap.command`
+
+### Homebrew missing
+Meaning: older or fresh macOS install.
+Fix:
+- let bootstrap install Homebrew when prompted
+- or install manually:
+  - `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+
+### Python 3.11 not detected
+Fix:
+- let bootstrap install via Homebrew
+- reopen Terminal and rerun `launch_macos_bootstrap.command`
+
+### `.command` launcher closes too quickly
+Fix:
+- open Terminal manually
+- run launcher from repo root:
+  - `./launch_macos_bootstrap.command`
+  - `./launch_macos_app.command`
+  - `./launch_macos_uninstall.command`
+
+---
+
+## =====================================================
+## Appendix A - Manual Install Instructions (Windows)
+## =====================================================
+
+These are the full Windows manual steps (kept intentionally for users who want full control).
 
 ### A0) Open Command Prompt
 Command Prompt is the Windows command window used for manual commands in this appendix.
@@ -258,7 +351,7 @@ winget install --id Python.Python.3.11 -e
 ```
 
 2. Alternative direct installer (`.exe`, avoid `.msix` manager package):
-   - `https://www.python.org/ftp/python/3.11.14/python-3.11.14-amd64.exe`
+   - `https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
 3. During install, check **Add Python to PATH**.
 4. Verify:
 
