@@ -81,6 +81,57 @@ function Install-WithWinget {
     Refresh-ProcessPath
 }
 
+function Test-VcRedistInstalled {
+    $paths = @(
+        "HKLM:\SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
+    )
+    foreach ($path in $paths) {
+        try {
+            $entry = Get-ItemProperty -Path $path -ErrorAction Stop
+            if ($null -ne $entry.Installed -and [int]$entry.Installed -eq 1) {
+                return $true
+            }
+        }
+        catch {
+            # ignore missing key
+        }
+    }
+    return $false
+}
+
+function Ensure-VcRedistInstalled {
+    if (Test-VcRedistInstalled) {
+        Write-Info "Microsoft Visual C++ Redistributable (x64) detected."
+        return
+    }
+
+    Write-WarnLine "Microsoft Visual C++ Redistributable (x64) is missing."
+    Write-WarnLine "PyTorch requires it on Windows."
+    if (-not (Test-Yes "Install Microsoft Visual C++ Redistributable (x64) now?" $true)) {
+        throw @(
+            "Microsoft Visual C++ Redistributable (x64) is required.",
+            "Install it from:",
+            "- https://aka.ms/vs/17/release/vc_redist.x64.exe",
+            "Then rerun launch_windows_installer.cmd."
+        ) -join [Environment]::NewLine
+    }
+
+    Install-ExecutableFromUrl `
+        -Url "https://aka.ms/vs/17/release/vc_redist.x64.exe" `
+        -FileName "vc_redist.x64.exe" `
+        -DisplayName "Microsoft Visual C++ Redistributable (x64)"
+
+    if (-not (Test-VcRedistInstalled)) {
+        throw @(
+            "Microsoft Visual C++ Redistributable (x64) still not detected after installer run.",
+            "Install it manually:",
+            "- https://aka.ms/vs/17/release/vc_redist.x64.exe",
+            "Then rerun launch_windows_installer.cmd."
+        ) -join [Environment]::NewLine
+    }
+}
+
 function Resolve-Python311Command {
     $pyCmd = Get-Command py -ErrorAction SilentlyContinue
     if ($pyCmd) {
@@ -272,6 +323,22 @@ function Install-PythonDeps {
     if ($LASTEXITCODE -ne 0) { throw "Failed installing CPU PyTorch." }
 }
 
+function Test-TorchImport {
+    param(
+        [Parameter(Mandatory = $true)][string]$PythonExe
+    )
+    & $PythonExe -c "import torch; print('TORCH_IMPORT_OK')"
+    if ($LASTEXITCODE -ne 0) {
+        throw @(
+            "PyTorch import failed after install.",
+            "On Windows this usually means Microsoft Visual C++ Redistributable (x64) is missing.",
+            "Install from:",
+            "- https://aka.ms/vs/17/release/vc_redist.x64.exe",
+            "Then rerun launch_windows_installer.cmd."
+        ) -join [Environment]::NewLine
+    }
+}
+
 function Invoke-InstallerSelfTest {
     Write-Section "Windows Installer Self-Test"
     Write-Info "Running token parser and validation checks..."
@@ -332,6 +399,7 @@ try {
 
     Write-Section "Preflight Checks"
     Write-Info "Git is not required for this installer (ZIP-based workflow)."
+    Ensure-VcRedistInstalled
     $pythonSpec = Ensure-Python311Installed
     Write-Info "Using Python launcher: $($pythonSpec.Launcher) $($pythonSpec.PrefixArgs -join ' ')"
 
@@ -350,6 +418,7 @@ try {
     }
 
     Install-PythonDeps -PythonExe $venvPython
+    Test-TorchImport -PythonExe $venvPython
 
     Write-Section "Hugging Face Setup"
     Write-Host "Before continuing, you must accept MedGemma terms on:" -ForegroundColor White

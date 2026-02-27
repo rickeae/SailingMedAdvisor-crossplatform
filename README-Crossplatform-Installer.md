@@ -39,10 +39,13 @@ Important rule for this guide:
 You need:
 1. Internet connection for package/model download during setup.
 2. A Hugging Face account: `https://huggingface.co/join`
-3. Acknowledge MedGemma terms on both pages:
+3. On Windows, the installer will require Microsoft Visual C++ Redistributable (x64) for PyTorch.
+   - Download link: `https://aka.ms/vs/17/release/vc_redist.x64.exe`
+   - The installer now checks this automatically.
+4. Acknowledge MedGemma terms on both pages:
    - `https://huggingface.co/google/medgemma-1.5-4b-it`
    - `https://huggingface.co/google/medgemma-27b-text-it`
-4. A Hugging Face token (Read scope):
+5. A Hugging Face token (Read scope):
    - Open: `https://huggingface.co/settings/tokens`
    - Click: `Create new token`
    - In `Token name`, enter a name (example: `medgemma`)
