@@ -39,11 +39,16 @@ Important rule for this guide:
 You need:
 1. Internet connection for package/model download during setup.
 2. A Hugging Face account: `https://huggingface.co/join`
-3. Accepted MedGemma terms on both pages:
+3. Acknowledge MedGemma terms on both pages:
    - `https://huggingface.co/google/medgemma-1.5-4b-it`
    - `https://huggingface.co/google/medgemma-27b-text-it`
 4. A Hugging Face token (Read scope):
    - `https://huggingface.co/settings/tokens`
+   create new token
+   read
+   name, like medgemma, for example
+   create token
+   save to a text file on disk because it wont be shown again
 
 The installer script will ask for the token when needed.
 
@@ -83,6 +88,7 @@ Steps:
 1. Open `SailingMedAdvisor-crossplatform` in File Explorer.
 2. Double-click `launch_windows_installer.cmd`.
 3. Follow prompts in the terminal window.
+   - when asked for Hugging Face token, paste only the token value (starts with `hf_`)
 4. When setup finishes, start the app with:
    - `launch_windows_app.cmd`
 5. Open browser:
@@ -113,6 +119,7 @@ Steps:
 2. Double-click `launch_macos_installer.command`.
 3. If blocked, right-click -> `Open` -> `Open`.
 4. Follow prompts in the terminal window.
+   - when asked for Hugging Face token, paste only the token value (starts with `hf_`)
 5. When setup finishes, start the app with:
    - `launch_macos_app.command`
 6. Open browser:

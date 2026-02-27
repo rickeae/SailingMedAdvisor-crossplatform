@@ -172,6 +172,56 @@ function Read-SecretToken([string]$prompt) {
     }
 }
 
+function Normalize-HfToken([string]$raw) {
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+        return ""
+    }
+    $token = $raw.Trim().Trim('"').Trim("'")
+    if ($token -match "\s") {
+        $parts = $token -split "\s+"
+        if ($parts.Count -gt 0) {
+            $token = $parts[0]
+        }
+    }
+    return $token
+}
+
+function Read-HfTokenWithValidation {
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        $raw = Read-SecretToken "Paste your Hugging Face token only (starts with hf_)"
+        $token = Normalize-HfToken $raw
+        if ([string]::IsNullOrWhiteSpace($token)) {
+            Write-WarnLine "No token detected. Paste only the token string."
+            continue
+        }
+        if (-not ($token -match '^hf_[A-Za-z0-9]{20,}$')) {
+            Write-WarnLine "Token format looks invalid. It should start with hf_ and contain no spaces."
+            continue
+        }
+        return $token
+    }
+    throw "Token entry failed after 3 attempts."
+}
+
+function Validate-HfToken {
+    param(
+        [Parameter(Mandatory = $true)][string]$PythonExe,
+        [Parameter(Mandatory = $true)][string]$Token
+    )
+    $code = @'
+from huggingface_hub import HfApi
+import sys
+token = sys.argv[1].strip()
+api = HfApi(token=token)
+api.whoami()
+print("HF token OK")
+'@
+    & $PythonExe -c $code $Token
+    if ($LASTEXITCODE -ne 0) {
+        throw "Hugging Face token validation failed. Confirm token, terms acceptance, and internet connectivity."
+    }
+}
+
 function Invoke-HfCommand {
     param(
         [Parameter(Mandatory = $true)][string[]]$Arguments,
@@ -256,13 +306,9 @@ try {
         throw "Terms not accepted yet. Complete terms acceptance, then rerun installer."
     }
 
-    $hfToken = Read-SecretToken "Paste your Hugging Face token (input hidden)"
-    if ([string]::IsNullOrWhiteSpace($hfToken)) {
-        throw "No token provided. Cannot continue."
-    }
-
-    Write-Info "Logging in to Hugging Face CLI..."
-    Invoke-HfCommand -PythonExe $venvPython -Arguments @("auth", "login", "--token", $hfToken)
+    $hfToken = Read-HfTokenWithValidation
+    Write-Info "Validating Hugging Face token..."
+    Validate-HfToken -PythonExe $venvPython -Token $hfToken
 
     if (-not $SkipModelDownload) {
         Write-Section "Model Download"
