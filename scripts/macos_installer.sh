@@ -127,14 +127,18 @@ ensure_python311() {
   exit 1
 }
 
-invoke_hf() {
+validate_hf_token() {
   local py_exec="$1"
-  shift
-  if command -v hf >/dev/null 2>&1; then
-    hf "$@"
-  else
-    "$py_exec" -m huggingface_hub.commands.hf_cli "$@"
-  fi
+  local token="$2"
+  "$py_exec" -c "from huggingface_hub import HfApi; import sys; HfApi(token=sys.argv[1].strip()).whoami(); print('HF token OK')" "$token"
+}
+
+hf_download_repo() {
+  local py_exec="$1"
+  local repo_id="$2"
+  local cache_dir="$3"
+  local token="$4"
+  "$py_exec" -c "from huggingface_hub import snapshot_download; import sys; snapshot_download(repo_id=sys.argv[1], cache_dir=sys.argv[2], token=sys.argv[3]); print('HF download OK')" "$repo_id" "$cache_dir" "$token"
 }
 
 install_python_deps() {
@@ -203,8 +207,11 @@ if [[ -z "${hf_token}" ]]; then
   exit 1
 fi
 
-write_info "Logging in to Hugging Face CLI..."
-invoke_hf "$venv_python" auth login --token "$hf_token"
+write_info "Validating Hugging Face token..."
+if ! validate_hf_token "$venv_python" "$hf_token"; then
+  echo "[ERROR] Hugging Face token validation failed. Confirm token, terms acceptance, and internet connectivity."
+  exit 1
+fi
 
 if [[ "${1:-}" != "--skip-model-download" ]]; then
   write_section "Model Download"
@@ -222,20 +229,32 @@ if [[ "${1:-}" != "--skip-model-download" ]]; then
   case "$choice" in
     1)
       write_info "Downloading MedGemma 4B..."
-      invoke_hf "$venv_python" download google/medgemma-1.5-4b-it --cache-dir "$cache_dir" --token "$hf_token"
+      if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
+        echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
+        exit 1
+      fi
       ;;
     2)
       write_info "Downloading MedGemma 4B..."
-      invoke_hf "$venv_python" download google/medgemma-1.5-4b-it --cache-dir "$cache_dir" --token "$hf_token"
+      if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
+        echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
+        exit 1
+      fi
       write_info "Downloading MedGemma 27B..."
-      invoke_hf "$venv_python" download google/medgemma-27b-text-it --cache-dir "$cache_dir" --token "$hf_token"
+      if ! hf_download_repo "$venv_python" "google/medgemma-27b-text-it" "$cache_dir" "$hf_token"; then
+        echo "[ERROR] Model download failed for google/medgemma-27b-text-it."
+        exit 1
+      fi
       ;;
     3)
       write_warn "Skipping model download by user choice."
       ;;
     *)
       write_warn "Unknown choice '$choice'. Defaulting to 4B only."
-      invoke_hf "$venv_python" download google/medgemma-1.5-4b-it --cache-dir "$cache_dir" --token "$hf_token"
+      if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
+        echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
+        exit 1
+      fi
       ;;
   esac
 else
@@ -264,4 +283,3 @@ echo "Next steps:"
 echo "  1) Start app: ./launch_macos_app.command"
 echo "  2) Open: http://127.0.0.1:5000"
 echo "  3) Verify in Settings -> Offline Readiness Check"
-

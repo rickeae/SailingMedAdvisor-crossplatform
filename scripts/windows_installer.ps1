@@ -228,20 +228,17 @@ function Validate-HfToken {
     }
 }
 
-function Invoke-HfCommand {
+function Invoke-HfDownload {
     param(
-        [Parameter(Mandatory = $true)][string[]]$Arguments,
-        [Parameter(Mandatory = $true)][string]$PythonExe
+        [Parameter(Mandatory = $true)][string]$PythonExe,
+        [Parameter(Mandatory = $true)][string]$RepoId,
+        [Parameter(Mandatory = $true)][string]$CacheDir,
+        [Parameter(Mandatory = $true)][string]$Token
     )
-    $hfCmd = Get-Command hf -ErrorAction SilentlyContinue
-    if ($hfCmd) {
-        & hf @Arguments
-    }
-    else {
-        & $PythonExe -m huggingface_hub.commands.hf_cli @Arguments
-    }
+    $code = "from huggingface_hub import snapshot_download; import sys; snapshot_download(repo_id=sys.argv[1], cache_dir=sys.argv[2], token=sys.argv[3]); print('HF download OK')"
+    & $PythonExe -c $code $RepoId $CacheDir $Token
     if ($LASTEXITCODE -ne 0) {
-        throw "HF command failed: $($Arguments -join ' ')"
+        throw "Model download failed for repository '$RepoId'. Confirm token, terms acceptance, internet connectivity, and available disk space."
     }
 }
 
@@ -331,7 +328,7 @@ try {
 
     Write-Section "SailingMedAdvisor Windows Installer"
     Write-Info "Repository root: $repoRoot"
-    Write-Info "This script installs dependencies, configures Hugging Face login, and downloads MedGemma models."
+    Write-Info "This script installs dependencies, validates Hugging Face token access, and downloads MedGemma models."
 
     Write-Section "Preflight Checks"
     Write-Info "Git is not required for this installer (ZIP-based workflow)."
@@ -383,20 +380,20 @@ try {
         switch ($choice) {
             "1" {
                 Write-Info "Downloading MedGemma 4B..."
-                Invoke-HfCommand -PythonExe $venvPython -Arguments @("download", "google/medgemma-1.5-4b-it", "--cache-dir", $cacheDir, "--token", $hfToken)
+                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
             }
             "2" {
                 Write-Info "Downloading MedGemma 4B..."
-                Invoke-HfCommand -PythonExe $venvPython -Arguments @("download", "google/medgemma-1.5-4b-it", "--cache-dir", $cacheDir, "--token", $hfToken)
+                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
                 Write-Info "Downloading MedGemma 27B..."
-                Invoke-HfCommand -PythonExe $venvPython -Arguments @("download", "google/medgemma-27b-text-it", "--cache-dir", $cacheDir, "--token", $hfToken)
+                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-27b-text-it" -CacheDir $cacheDir -Token $hfToken
             }
             "3" {
                 Write-WarnLine "Skipping model download by user choice."
             }
             default {
                 Write-WarnLine "Unknown choice '$choice'. Defaulting to 4B only."
-                Invoke-HfCommand -PythonExe $venvPython -Arguments @("download", "google/medgemma-1.5-4b-it", "--cache-dir", $cacheDir, "--token", $hfToken)
+                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
             }
         }
     }
