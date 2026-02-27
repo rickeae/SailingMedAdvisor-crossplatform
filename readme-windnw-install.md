@@ -44,7 +44,7 @@ launch_windows_uninstall.cmd
 
 ### Step-by-step uninstall instructions
 1. Open **File Explorer**.
-2. Open your `SailMedAdvisor-crossplatform` folder.
+2. Open your `SailingMedAdvisor-crossplatform` folder.
 3. Double-click `launch_windows_uninstall.cmd`.
 4. A black terminal window opens and asks simple Yes/No questions.
 5. For each item you want to remove, type `y` and press **Enter**.
@@ -63,9 +63,9 @@ What the uninstall script can remove:
 - `data\runtime.log`
 - `app.db` (optional, deletes saved app data)
 
-If you also want to remove the source code, delete the folder named `SailMedAdvisor-crossplatform`.  
+If you also want to remove the source code, delete the folder named `SailingMedAdvisor-crossplatform`.  
 You will usually find it in your Windows user home folder, for example:
-- `C:\Users\<your-username>\SailMedAdvisor-crossplatform`
+- `C:\Users\<your-username>\SailingMedAdvisor-crossplatform`
 
 ---
 
@@ -111,30 +111,30 @@ You should see a black or dark window with a blinking cursor, ready for typing.
    - Download the Python runtime installer (`.exe`):
      - `https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe`
    - Run the installer.
-   
-   - Check **Add Python to PATH**, which is towards the bottom of the first screen.
+   - Leave "Use admin privleges when installing py.exe" checked.
+   - Check **Add Python to PATH**.
    - Click Install Now.
    - If you downloaded `python-manager-*.msix` by mistake, ignore it and use the `.exe` link above.
    - Optional quick check in Command Prompt:
      - `py -3.11 --version`
 2. Download the project as a ZIP file:
-   - Open `https://github.com/rickeae/SailMedAdvisor-crossplatform`
+   - Open `https://github.com/rickeae/SailingMedAdvisor-crossplatform`
    - Click **Code** -> **Download ZIP**
    - Save the ZIP file
 3. Extract the ZIP file:
    - Right-click ZIP -> **Extract All...**
    - Open the extracted folder
-   - If needed, rename the folder to `SailMedAdvisor-crossplatform`
-4. Open the extracted project folder named `SailMedAdvisor-crossplatform`  
-   (example: `C:\Users\<your-username>\Downloads\SailMedAdvisor-crossplatform`).
-5. Inside `SailMedAdvisor-crossplatform`, double-click:
+   - If needed, rename the folder to `SailingMedAdvisor-crossplatform`
+4. Open the extracted project folder named `SailingMedAdvisor-crossplatform`  
+   (example: `C:\Users\<your-username>\Downloads\SailingMedAdvisor-crossplatform`).
+5. Inside `SailingMedAdvisor-crossplatform`, double-click:
    - `launch_windows_bootstrap.cmd`
 6. Follow the on-screen prompts in the black terminal window:
    - confirm MedGemma terms were accepted
    - paste Hugging Face token
    - choose 4B-only or 4B+27B download
    - optionally install quantized 27B CPU backend (`llama-cpp-python`)
-7. When bootstrap is finished, still inside `SailMedAdvisor-crossplatform`, double-click:
+7. When bootstrap is finished, still inside `SailingMedAdvisor-crossplatform`, double-click:
    - `launch_windows_app.cmd`
 8. Open the app in your browser:
    - `http://127.0.0.1:5000`
@@ -232,7 +232,7 @@ How to open Terminal:
 
 ### 5.1 Step-by-step macOS install
 1. Download the project ZIP:
-   - `https://github.com/rickeae/SailMedAdvisor-crossplatform`
+   - `https://github.com/rickeae/SailingMedAdvisor-crossplatform`
    - Click **Code** -> **Download ZIP**
 2. Extract the ZIP and open the extracted folder.
 3. Run the macOS bootstrap launcher:
@@ -373,8 +373,8 @@ Why this is necessary: you cannot run the app until files exist locally.
 
 ```powershell
 cd $HOME
-git clone https://github.com/rickeae/SailMedAdvisor-crossplatform.git
-cd .\SailMedAdvisor-crossplatform
+git clone https://github.com/rickeae/SailingMedAdvisor-crossplatform.git
+cd .\SailingMedAdvisor-crossplatform
 ```
 
 ### A3) Create Virtual Environment
