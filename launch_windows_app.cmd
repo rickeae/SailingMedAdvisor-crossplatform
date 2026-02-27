@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 if /i not "%~1"=="--inner" (
-  start "SailingMedAdvisor App" cmd /k "\"%~f0\" --inner"
+  start "SailingMedAdvisor App" cmd /k ""%~f0" --inner"
   exit /b 0
 )
 shift
