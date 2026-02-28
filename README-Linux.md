@@ -59,6 +59,17 @@ The installer now runs a fixed full setup automatically:
 
 There are no model selection prompts during install.
 
+### Token Paste Tip (Linux)
+
+When the installer asks for your Hugging Face token, the input is hidden for safety.
+In many Linux terminals, nothing is shown while you type or paste. That is normal.
+
+1. Click inside the terminal window once.
+2. Paste token:
+- `Ctrl+Shift+V` (common Linux terminal shortcut)
+- or right-click and choose `Paste`
+3. Press `Enter`.
+
 ## 4) Start App
 
 From the same folder, run:

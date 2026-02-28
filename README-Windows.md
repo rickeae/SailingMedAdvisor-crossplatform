@@ -74,6 +74,17 @@ The installer now runs a fixed full setup automatically:
 
 There are no model selection prompts during install.
 
+### Token Paste Tip (Windows)
+
+When the installer asks for your Hugging Face token, the input is hidden for safety.
+This means you may not see characters appear while typing or pasting. That is normal.
+
+1. Click inside the terminal window once.
+2. Paste token:
+- `Ctrl+V` (Windows Terminal / newer cmd)
+- or right-click and choose `Paste`
+3. Press `Enter`.
+
 ## 5) Start App
 
 1. In the same folder, double-click:
