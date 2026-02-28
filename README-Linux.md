@@ -5,14 +5,16 @@ Current installer path is targeted at Ubuntu/Debian style systems.
 
 ## 1) Estimated System Requirements
 
+These numbers are estimates, not guarantees. They are based on common Linux systems running local inference. Actual needs can vary by distro, desktop environment, background services, and how much swap space is already configured.
+
 1. Linux x86_64
-2. RAM:
+2. RAM (working memory used while the app runs):
 - Minimum: 16 GB
 - Recommended: 32 GB
-3. Free disk:
+3. Free disk space (storage used by Python packages and model files):
 - Minimum: 60 GB
 - Recommended: 100 GB
-4. Swap (virtual memory):
+4. Swap (virtual memory Linux uses when RAM is full):
 - If RAM is 16 GB or less, set swap to 32-64 GB
 - If RAM is 24 GB or less, set swap to at least 32 GB
 5. Internet for first install

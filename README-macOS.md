@@ -5,14 +5,16 @@ It keeps the steps simple and direct.
 
 ## 1) Estimated System Requirements
 
+These numbers are estimates, not guarantees. They are based on common Mac laptop/desktop setups running models locally. Actual needs can vary depending on other apps running, free disk space, and the exact Mac hardware generation.
+
 1. macOS (Intel or Apple Silicon)
-2. RAM:
+2. RAM (working memory used while the app runs):
 - Minimum: 16 GB
 - Recommended: 24 GB or more
-3. Free disk:
+3. Free disk space (storage used by Python packages and model files):
 - Minimum: 80 GB
 - Recommended: 120 GB
-4. Virtual memory note:
+4. Virtual memory note (extra disk space macOS uses when RAM fills):
 - macOS manages virtual memory automatically.
 - You cannot set a page file manually like Windows.
 - Keep plenty of free disk space so macOS can create swap files.

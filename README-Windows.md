@@ -1,18 +1,20 @@
 # SailingMedAdvisor Windows Install Guide
 
 This guide is for Windows users.
-It is written for users who are smart but not highly technical.
+The steps are written in plain language and explain what each action does.
 
 ## 1) Estimated System Requirements
 
+These numbers are estimates, not guarantees. They are based on typical Windows laptops running local MedGemma models. Actual needs can vary based on background apps, available disk speed, and other software already running on your machine.
+
 1. 64-bit Windows 10 or 11
-2. RAM:
+2. RAM (working memory used while the app runs):
 - Minimum: 16 GB
 - Recommended: 32 GB
-3. Free disk:
+3. Free disk space (storage used by Python packages and model files):
 - Minimum: 60 GB
 - Recommended: 100 GB
-4. Virtual memory (paging file):
+4. Virtual memory (Windows paging file used when RAM is full):
 - If RAM is 16 GB, set paging file to:
   - Initial size: `32768` MB
   - Maximum size: `65536` MB
@@ -24,18 +26,19 @@ If this is not set, PyTorch may fail with `os error 1455`.
 
 1. Press the Windows key.
 2. Search for `View advanced system settings`.
-3. Open it.
-4. Click `Settings` under `Performance`.
-5. Open the `Advanced` tab.
+3. In the `System Properties` window, click the `Advanced` tab.
+4. Under `Performance`, click `Settings`.
+5. In the `Performance Options` window, click the `Advanced` tab.
 6. Under `Virtual memory`, click `Change`.
-7. Uncheck `Automatically manage paging file size`.
+7. Uncheck `Automatically manage paging file size for all drives`.
 8. Select drive `C:`.
 9. Choose `Custom size`.
-10. Set:
+10. Enter:
 - Initial size: `32768`
 - Maximum size: `65536`
-11. Click `Set`, then `OK`.
-12. Reboot Windows.
+11. Click `Set`.
+12. Click `OK` on all open windows to apply the change.
+13. Reboot Windows.
 
 ## 3) Create Hugging Face Token
 
