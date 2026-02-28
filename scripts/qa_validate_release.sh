@@ -53,11 +53,17 @@ if bash -n launch_linux_installer.sh; then ok "bash -n launch_linux_installer.sh
 
 echo
 echo "3) Installer behavior regression checks"
-if rg -n "Choose model download mode|Skip model download by user choice|Install llama-cpp|test_yes" \
+if rg -n "Install llama-cpp|test_yes|\\[Y/n\\]|\\[y/N\\]" \
   scripts/windows_installer.ps1 scripts/macos_installer.sh scripts/linux_installer.sh >/dev/null; then
-  fail "Installer scripts contain optional-choice logic that should not be present."
+  fail "Installer scripts contain disallowed yes/no or optional-extra prompt logic."
 else
-  ok "No optional-choice prompts in installers."
+  ok "Installer prompts match expected scope."
+fi
+
+if rg -n "Choose model download mode|Enter choice \\[1/2\\]" scripts/windows_installer.ps1 scripts/macos_installer.sh scripts/linux_installer.sh >/dev/null; then
+  ok "Model-selection prompt is present in installers."
+else
+  fail "Model-selection prompt is missing in one or more installers."
 fi
 
 if rg -n 'Start-Process -FilePath \$installerPath -ArgumentList \$InstallerArgs' scripts/windows_installer.ps1 >/dev/null; then

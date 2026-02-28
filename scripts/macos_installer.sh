@@ -188,15 +188,23 @@ write_section "Model Download"
 cache_dir="$repo_root/data/models_cache/hub"
 mkdir -p "$cache_dir"
 write_info "Model cache path: $cache_dir"
+echo "Choose model download mode:"
+echo "  1) 4B only (recommended for most systems)"
+echo "  2) 4B + 27B (larger download and heavier runtime)"
+read -r -p "Enter choice [1/2]: " download_choice
+download_choice="${download_choice:-1}"
+
 write_info "Downloading MedGemma 4B..."
 if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
   echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
   exit 1
 fi
-write_info "Downloading MedGemma 27B..."
-if ! hf_download_repo "$venv_python" "google/medgemma-27b-text-it" "$cache_dir" "$hf_token"; then
-  echo "[ERROR] Model download failed for google/medgemma-27b-text-it."
-  exit 1
+if [[ "$download_choice" == "2" ]]; then
+  write_info "Downloading MedGemma 27B..."
+  if ! hf_download_repo "$venv_python" "google/medgemma-27b-text-it" "$cache_dir" "$hf_token"; then
+    echo "[ERROR] Model download failed for google/medgemma-27b-text-it."
+    exit 1
+  fi
 fi
 
 write_info "Optional quantized 27B tooling is not installed by default."

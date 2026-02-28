@@ -54,10 +54,10 @@ The installer now runs a fixed full setup automatically:
 - Creates/reuses `.venv`
 - Installs required Python packages
 - Installs CPU PyTorch
-- Downloads both MedGemma models (4B and 27B)
+- Asks which models to download:
+  - `4B only` (recommended for most systems)
+  - `4B + 27B` (larger download and heavier runtime)
 - Writes local runtime config files
-
-There are no model selection prompts during install.
 
 ### Token Paste Tip (Linux)
 

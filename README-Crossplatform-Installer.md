@@ -12,4 +12,4 @@ Each platform has one installer launcher:
 2. macOS: `launch_macos_installer.command`
 3. Linux: `launch_linux_installer.sh`
 
-Installers now run a fixed full setup (no model-choice prompts). The only required user input during install is the Hugging Face token.
+Installers run a full setup and ask which models to download (`4B only` or `4B + 27B`). The only other required user input during install is the Hugging Face token.

@@ -14,7 +14,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $script:TranscriptStarted = $false
 $script:InstallerLogPath = $null
-$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.5"
+$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.6"
 
 function Write-Section([string]$text) {
     Write-Host ""
@@ -479,10 +479,21 @@ try {
         $cacheDir = Join-Path $repoRoot "data\models_cache\hub"
         New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
         Write-Info "Model cache path: $cacheDir"
-        Write-Info "Downloading MedGemma 4B..."
-        Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
-        Write-Info "Downloading MedGemma 27B..."
-        Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-27b-text-it" -CacheDir $cacheDir -Token $hfToken
+        Write-Host "Choose model download mode:" -ForegroundColor White
+        Write-Host "  1) 4B only (recommended for most systems)" -ForegroundColor White
+        Write-Host "  2) 4B + 27B (larger download and heavier runtime)" -ForegroundColor White
+        $downloadChoice = (Read-Host "Enter choice [1/2]").Trim()
+        if ([string]::IsNullOrWhiteSpace($downloadChoice)) { $downloadChoice = "1" }
+        if ($downloadChoice -eq "2") {
+            Write-Info "Downloading MedGemma 4B..."
+            Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
+            Write-Info "Downloading MedGemma 27B..."
+            Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-27b-text-it" -CacheDir $cacheDir -Token $hfToken
+        }
+        else {
+            Write-Info "Downloading MedGemma 4B..."
+            Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
+        }
     }
     else {
         Write-WarnLine "Skipping model download due to -SkipModelDownload."
