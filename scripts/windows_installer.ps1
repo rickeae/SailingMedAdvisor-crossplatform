@@ -52,7 +52,17 @@ function Install-ExecutableFromUrl {
         throw "Failed downloading $DisplayName installer from $Url"
     }
     Write-Info "Launching $DisplayName installer. Complete the installer, then return here."
-    $proc = Start-Process -FilePath $installerPath -ArgumentList $InstallerArgs -Wait -PassThru
+    $proc = $null
+    if ($InstallerArgs -and $InstallerArgs.Count -gt 0) {
+        $cleanArgs = @($InstallerArgs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        if ($cleanArgs.Count -gt 0) {
+            $proc = Start-Process -FilePath $installerPath -ArgumentList $cleanArgs -Wait -PassThru
+        } else {
+            $proc = Start-Process -FilePath $installerPath -Wait -PassThru
+        }
+    } else {
+        $proc = Start-Process -FilePath $installerPath -Wait -PassThru
+    }
     if ($proc -and $null -ne $proc.ExitCode) {
         $exitCode = [int]$proc.ExitCode
         if ($exitCode -ne 0 -and $exitCode -ne 3010 -and $exitCode -ne 1638) {
@@ -94,14 +104,16 @@ function Test-VcRedistInstalled {
         "HKLM:\SOFTWARE\WOW6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x64"
     )
     foreach ($path in $paths) {
-        try {
-            $entry = Get-ItemProperty -Path $path -ErrorAction Stop
-            if ($null -ne $entry.Installed -and [int]$entry.Installed -eq 1) {
-                return $true
+        if (Test-Path $path) {
+            try {
+                $entry = Get-ItemProperty -Path $path -ErrorAction Stop
+                if ($null -ne $entry.Installed -and [int]$entry.Installed -eq 1) {
+                    return $true
+                }
             }
-        }
-        catch {
-            # ignore missing key
+            catch {
+                # ignore read failure for this key
+            }
         }
     }
     return $false
