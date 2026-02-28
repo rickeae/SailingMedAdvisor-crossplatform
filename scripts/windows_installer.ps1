@@ -53,16 +53,19 @@ function Install-ExecutableFromUrl {
     }
     Write-Info "Launching $DisplayName installer. Complete the installer, then return here."
     $proc = $null
-    if ($InstallerArgs -and $InstallerArgs.Count -gt 0) {
-        $cleanArgs = @($InstallerArgs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
-        if ($cleanArgs.Count -gt 0) {
-            $proc = Start-Process -FilePath $installerPath -ArgumentList $cleanArgs -Wait -PassThru
-        } else {
-            $proc = Start-Process -FilePath $installerPath -Wait -PassThru
-        }
-    } else {
-        $proc = Start-Process -FilePath $installerPath -Wait -PassThru
+    $startParams = @{
+        FilePath = $installerPath
+        Wait     = $true
+        PassThru = $true
     }
+    $cleanArgs = @()
+    if ($InstallerArgs) {
+        $cleanArgs = @($InstallerArgs | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    }
+    if ($cleanArgs.Count -gt 0) {
+        $startParams["ArgumentList"] = $cleanArgs
+    }
+    $proc = Start-Process @startParams
     if ($proc -and $null -ne $proc.ExitCode) {
         $exitCode = [int]$proc.ExitCode
         if ($exitCode -ne 0 -and $exitCode -ne 3010 -and $exitCode -ne 1638) {
@@ -78,24 +81,21 @@ function Install-WithWinget {
         [Parameter(Mandatory = $true)][string]$PackageId,
         [Parameter(Mandatory = $true)][string]$DisplayName
     )
+    [OutputType([bool])]
     $winget = Get-Command winget -ErrorAction SilentlyContinue
     if (-not $winget) {
-        $manualHint = @(
-            "winget is not available in this environment.",
-            "Install $DisplayName manually, then rerun launch_windows_installer.cmd.",
-            "Manual install links:",
-            "- Python 3.11 (64-bit): https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe",
-            "If you are using Windows Sandbox, this is expected on some images."
-        ) -join [Environment]::NewLine
-        throw $manualHint
+        Write-WarnLine "winget is not available in this environment."
+        return $false
     }
     Write-WarnLine "$DisplayName not detected. Attempting auto-install via winget..."
     & winget install --id $PackageId -e --silent --accept-package-agreements --accept-source-agreements
     if ($LASTEXITCODE -ne 0) {
-        throw "Failed installing $DisplayName via winget."
+        Write-WarnLine "Failed installing $DisplayName via winget."
+        return $false
     }
     Start-Sleep -Seconds 2
     Refresh-ProcessPath
+    return $true
 }
 
 function Test-VcRedistInstalled {
@@ -188,11 +188,9 @@ function Resolve-Python311Command {
 function Ensure-Python311Installed {
     $resolved = Resolve-Python311Command
     if (-not $resolved) {
-        try {
-            Install-WithWinget -PackageId "Python.Python.3.11" -DisplayName "Python 3.11"
-        }
-        catch {
-            Write-WarnLine $_.Exception.Message
+        $wingetInstalled = Install-WithWinget -PackageId "Python.Python.3.11" -DisplayName "Python 3.11"
+        if (-not $wingetInstalled) {
+            Write-Info "Falling back to direct Python installer download."
         }
         $resolved = Resolve-Python311Command
     }
