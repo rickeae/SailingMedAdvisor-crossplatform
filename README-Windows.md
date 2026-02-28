@@ -92,7 +92,24 @@ This means you may not see characters appear while typing or pasting. That is no
 2. Open browser:
 - `http://127.0.0.1:5000`
 
-## 6) If Something Fails
+## 6) First Startup Dialogs (Normal)
+
+On first start, Windows may show one or more security dialogs. These are expected.
+
+1. If you see `Windows protected your PC`:
+- Click `More info`
+- Click `Run anyway`
+
+2. If you see `Windows Security Alert` for Python:
+- This appears because SailingMedAdvisor runs a local web server on your own machine.
+- Check `Private networks` only
+- Click `Allow access`
+
+3. If a terminal window says token input is hidden:
+- This is normal for secure token entry.
+- Paste token, then press `Enter`.
+
+## 7) If Something Fails
 
 1. If you see `os error 1455` or `paging file is too small`:
 - Recheck virtual memory settings in Section 2
@@ -105,7 +122,7 @@ This means you may not see characters appear while typing or pasting. That is no
 3. If SmartScreen blocks scripts:
 - Click `More info` then `Run anyway`
 
-## 7) Uninstall
+## 8) Uninstall
 
 Run:
 - `launch_windows_uninstall.cmd`
