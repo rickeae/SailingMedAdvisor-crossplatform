@@ -367,6 +367,36 @@ async function loadChatMetrics() {
 }
 
 /**
+ * Build an operator-friendly message for chat submit failures.
+ * Converts browser-level "Failed to fetch" into actionable backend guidance.
+ */
+async function buildChatSubmitErrorMessage(error) {
+    const raw = String(error?.message || error || 'Unknown error');
+    const lowered = raw.toLowerCase();
+    if (!lowered.includes('failed to fetch')) {
+        return raw;
+    }
+
+    let backendHint = '';
+    try {
+        const probe = await fetch('/api/db/status', { credentials: 'same-origin', cache: 'no-store' });
+        if (probe.ok) {
+            backendHint = 'Backend is reachable, so the chat request likely failed during model execution. Check the terminal logs and retry.';
+        } else {
+            backendHint = `Backend probe returned HTTP ${probe.status}.`;
+        }
+    } catch (probeErr) {
+        backendHint = 'Backend is not reachable. The app process may have stopped or crashed.';
+    }
+
+    return [
+        'Unable to submit consultation request to /api/chat.',
+        backendHint,
+        'If this happened right after starting MedGemma, check for memory/runtime errors in the terminal and restart SailingMedAdvisor.',
+    ].join(' ');
+}
+
+/**
  * normalizeTriageNodeKey: function-level behavior note for maintainers.
  * Keep this block synchronized with implementation changes.
  */
@@ -1703,9 +1733,11 @@ async function submitChatMessage({ message, isStart, force28b = false, queueWait
         } catch (err) { /* ignore */ }
     } catch (error) {
         loadingDiv.remove();
+        const friendlyMessage = await buildChatSubmitErrorMessage(error);
         if (display && normalizeMode(currentMode) === mode) {
-            display.innerHTML += `<div class="response-block" style="border-left-color:var(--red);"><b>ERROR:</b> ${error.message}</div>`;
+            display.innerHTML += `<div class="response-block" style="border-left-color:var(--red);"><b>ERROR:</b> ${friendlyMessage}</div>`;
         }
+        alert(friendlyMessage);
     } finally {
         isProcessing = false;
         if (isStart) {
