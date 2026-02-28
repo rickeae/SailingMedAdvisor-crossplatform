@@ -15,7 +15,7 @@ These numbers are estimates, not guarantees. They are based on typical Windows l
 - Minimum: 60 GB
 - Recommended: 100 GB
 4. Virtual memory (Windows paging file used when RAM is full):
-- If RAM is 16 GB, set paging file to:
+- If RAM is 16 GB, set paging file to (steps are provided below):
   - Initial size: `32768` MB
   - Maximum size: `65536` MB
 5. Internet for first install
