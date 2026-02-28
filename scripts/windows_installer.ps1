@@ -14,7 +14,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $script:TranscriptStarted = $false
 $script:InstallerLogPath = $null
-$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.6"
+$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.7"
 
 function Write-Section([string]$text) {
     Write-Host ""
@@ -33,6 +33,46 @@ function Refresh-ProcessPath() {
     $machinePath = [Environment]::GetEnvironmentVariable("Path", "Machine")
     $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = "$machinePath;$userPath"
+}
+
+function Get-FreeDiskSpaceGB {
+    param(
+        [Parameter(Mandatory = $true)][string]$Path
+    )
+    try {
+        $root = [System.IO.Path]::GetPathRoot((Resolve-Path $Path).Path)
+        if ([string]::IsNullOrWhiteSpace($root)) {
+            return -1
+        }
+        $driveName = $root.TrimEnd('\').TrimEnd(':')
+        $drive = Get-PSDrive -Name $driveName -ErrorAction SilentlyContinue
+        if (-not $drive) {
+            return -1
+        }
+        return [math]::Round(($drive.Free / 1GB), 2)
+    }
+    catch {
+        return -1
+    }
+}
+
+function Remove-PartialModelCache {
+    param(
+        [Parameter(Mandatory = $true)][string]$CacheDir,
+        [Parameter(Mandatory = $true)][string]$ModelRepoFolder
+    )
+    $partialPath = Join-Path $CacheDir $ModelRepoFolder
+    if (Test-Path $partialPath) {
+        Write-WarnLine "Removing partial model cache: $partialPath"
+        try {
+            Remove-Item -Path $partialPath -Recurse -Force -ErrorAction Stop
+            Write-Info "Removed partial model cache."
+        }
+        catch {
+            Write-WarnLine "Could not remove partial cache automatically."
+            Write-WarnLine "You can remove it manually: $partialPath"
+        }
+    }
 }
 
 function Install-ExecutableFromUrl {
@@ -429,7 +469,7 @@ if ($SelfTest) {
 try {
     $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
     Set-Location $repoRoot
-    $script:InstallerLogPath = Join-Path $repoRoot "windows_installer.log"
+    $script:InstallerLogPath = Join-Path $repoRoot "windows_installer_log.txt"
     try {
         Start-Transcript -Path $script:InstallerLogPath -Force | Out-Null
         $script:TranscriptStarted = $true
@@ -479,6 +519,9 @@ try {
         $cacheDir = Join-Path $repoRoot "data\models_cache\hub"
         New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
         Write-Info "Model cache path: $cacheDir"
+        $installed4B = $false
+        $installed27B = $false
+        $skipped27B = $false
         Write-Host "Choose model download mode:" -ForegroundColor White
         Write-Host "  1) 4B only (recommended for most systems)" -ForegroundColor White
         Write-Host "  2) 4B + 27B (larger download and heavier runtime)" -ForegroundColor White
@@ -487,12 +530,38 @@ try {
         if ($downloadChoice -eq "2") {
             Write-Info "Downloading MedGemma 4B..."
             Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
-            Write-Info "Downloading MedGemma 27B..."
-            Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-27b-text-it" -CacheDir $cacheDir -Token $hfToken
+            $installed4B = $true
+            $freeBefore27B = Get-FreeDiskSpaceGB -Path $cacheDir
+            if ($freeBefore27B -ge 0 -and $freeBefore27B -lt 60) {
+                Write-WarnLine "Not enough free disk for 27B download (free: ${freeBefore27B} GB, recommended >= 60 GB)."
+                Write-WarnLine "Continuing with 4B only. You can add 27B later by rerunning installer and choosing option 2."
+                $skipped27B = $true
+            }
+            else {
+                Write-Info "Downloading MedGemma 27B..."
+                try {
+                    Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-27b-text-it" -CacheDir $cacheDir -Token $hfToken
+                    $installed27B = $true
+                }
+                catch {
+                    Write-WarnLine "27B download failed. Continuing with 4B only."
+                    Write-WarnLine "Most common cause is low free disk space. Free at least 60 GB, then rerun installer and choose option 2."
+                    Remove-PartialModelCache -CacheDir $cacheDir -ModelRepoFolder "models--google--medgemma-27b-text-it"
+                    $skipped27B = $true
+                }
+            }
         }
         else {
             Write-Info "Downloading MedGemma 4B..."
             Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
+            $installed4B = $true
+            $skipped27B = $true
+        }
+        if ($installed4B -and $installed27B) {
+            Write-Info "Model install summary: 4B and 27B are installed."
+        }
+        elseif ($installed4B -and $skipped27B) {
+            Write-Info "Model install summary: 4B is installed. 27B is not installed."
         }
     }
     else {

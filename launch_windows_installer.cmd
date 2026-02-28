@@ -1,11 +1,11 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-set "INSTALLER_VERSION=WIN-INSTALLER-2026-02-28.6"
+set "INSTALLER_VERSION=WIN-INSTALLER-2026-02-28.7"
 
 echo Starting SailingMedAdvisor Windows installer...
 echo Installer version: %INSTALLER_VERSION%
-set "INSTALLER_LOG=%~dp0windows_installer.log"
+set "INSTALLER_LOG=%~dp0windows_installer_log.txt"
 echo Writing installer log to: %INSTALLER_LOG%
 echo Running installer self-test...
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\windows_installer.ps1" -SelfTest

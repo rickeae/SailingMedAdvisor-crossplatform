@@ -121,6 +121,8 @@ On first start, Windows may show one or more security dialogs. These are expecte
 - Run installer again
 3. If SmartScreen blocks scripts:
 - Click `More info` then `Run anyway`
+4. Installer error details are saved in:
+- `windows_installer_log.txt`
 
 ## 8) Uninstall
 
