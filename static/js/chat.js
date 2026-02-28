@@ -342,7 +342,7 @@ let triageSupplementDialogShownThisStart = false;
  *   "google/medgemma-1.5-4b-it": {
  *     count: 15,
  *     total_ms: 300000,
- *     avg_ms: 20000  // ~20 seconds average
+ *     avg_ms: 600000  // ~10 minutes average (example)
  *   },
  *   "google/medgemma-1.5-27b-it": {
  *     count: 3,
@@ -1505,25 +1505,36 @@ async function submitChatMessage({ message, isStart, force28b = false, queueWait
         const modelLine = document.getElementById('chat-model-line');
         const etaLine = document.getElementById('chat-eta-line');
         if (modelLine) modelLine.textContent = `Model: ${modelName}`;
-        const avgMs = (chatMetrics[modelName]?.avg_ms)
-            || (modelName === 'local/medgemma-27b-quantized-cpu' ? 3600000 : (modelName.toLowerCase().includes('27b') ? 60000 : 20000));
+        const metricAvgMsRaw = chatMetrics[modelName]?.avg_ms;
+        const hasMeasuredEta = Number.isFinite(Number(metricAvgMsRaw)) && Number(metricAvgMsRaw) > 0;
+        const avgMs = hasMeasuredEta
+            ? Number(metricAvgMsRaw)
+            : (modelName === 'local/medgemma-27b-quantized-cpu' ? 3600000 : (modelName.toLowerCase().includes('27b') ? 3600000 : 600000));
         if (etaLine) {
-            const expectedSeconds = Math.max(1, Math.round(avgMs / 1000));
-            let remainingSeconds = expectedSeconds;
-            if (queueWait) {
-                etaLine.textContent = `Waiting for active consultation to finish. Expected run duration after start: ~${expectedSeconds}s`;
+            if (!hasMeasuredEta) {
+                if (queueWait) {
+                    etaLine.textContent = 'Waiting for active consultation to finish. Expected run duration after start: not yet known (first run).';
+                } else {
+                    etaLine.textContent = 'Expected duration: not yet known (first run).';
+                }
             } else {
-                etaLine.textContent = `Expected duration: ~${expectedSeconds}s • Remaining: ${remainingSeconds}s`;
-            }
-            blockerCountdownTimer = setInterval(() => {
-                remainingSeconds = Math.max(0, remainingSeconds - 1);
-                const remainingLabel = remainingSeconds > 0 ? `${remainingSeconds}s` : '<1s';
+                const expectedSeconds = Math.max(1, Math.round(avgMs / 1000));
+                let remainingSeconds = expectedSeconds;
                 if (queueWait) {
                     etaLine.textContent = `Waiting for active consultation to finish. Expected run duration after start: ~${expectedSeconds}s`;
                 } else {
-                    etaLine.textContent = `Expected duration: ~${expectedSeconds}s • Remaining: ${remainingLabel}`;
+                    etaLine.textContent = `Expected duration: ~${expectedSeconds}s • Remaining: ${remainingSeconds}s`;
                 }
-            }, 1000);
+                blockerCountdownTimer = setInterval(() => {
+                    remainingSeconds = Math.max(0, remainingSeconds - 1);
+                    const remainingLabel = remainingSeconds > 0 ? `${remainingSeconds}s` : '<1s';
+                    if (queueWait) {
+                        etaLine.textContent = `Waiting for active consultation to finish. Expected run duration after start: ~${expectedSeconds}s`;
+                    } else {
+                        etaLine.textContent = `Expected duration: ~${expectedSeconds}s • Remaining: ${remainingLabel}`;
+                    }
+                }, 1000);
+            }
         }
         blocker.classList.add('active');
     }

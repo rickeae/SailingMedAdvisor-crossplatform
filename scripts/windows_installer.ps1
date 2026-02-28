@@ -14,7 +14,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $script:TranscriptStarted = $false
 $script:InstallerLogPath = $null
-$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.8"
+$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.9"
 
 function Write-Section([string]$text) {
     Write-Host ""
@@ -345,6 +345,32 @@ function Install-PythonDeps {
     if ($LASTEXITCODE -ne 0) { throw "Failed installing CPU PyTorch." }
 }
 
+function Configure-InstallDatabaseProfile {
+    param(
+        [Parameter(Mandatory = $true)][string]$PythonExe,
+        [Parameter(Mandatory = $true)][string]$RepoRoot
+    )
+    Write-Section "Database Profile"
+    Write-Host "Choose startup database profile:" -ForegroundColor White
+    Write-Host "  1) Fresh empty database (recommended for real use)" -ForegroundColor White
+    Write-Host "  2) Sample data database (demo data; can be deleted later)" -ForegroundColor White
+    $dbChoice = ""
+    while ($dbChoice -ne "1" -and $dbChoice -ne "2") {
+        $dbChoice = (Read-Host "Enter choice [1/2]").Trim()
+        if ($dbChoice -ne "1" -and $dbChoice -ne "2") {
+            Write-WarnLine "Invalid choice. Enter 1 for empty database, or 2 for sample data."
+        }
+    }
+    $profile = if ($dbChoice -eq "2") { "sample" } else { "empty" }
+    $scriptPath = Join-Path $RepoRoot "scripts\set_install_db_profile.py"
+    $dbPath = Join-Path $RepoRoot "app.db"
+    Write-Info "Applying database profile: $profile"
+    & $PythonExe $scriptPath --db $dbPath --profile $profile
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed applying database profile: $profile"
+    }
+}
+
 function Test-TorchImport {
     param(
         [Parameter(Mandatory = $true)][string]$PythonExe
@@ -511,6 +537,7 @@ try {
 
     Install-PythonDeps -PythonExe $venvPython
     Ensure-TorchRuntimeReady -PythonExe $venvPython
+    Configure-InstallDatabaseProfile -PythonExe $venvPython -RepoRoot $repoRoot
 
     Write-Section "Hugging Face Setup"
     Write-Host "Before token validation and model download, accept MedGemma terms on:" -ForegroundColor White

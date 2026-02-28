@@ -107,6 +107,27 @@ install_python_deps() {
   "$py_exec" -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 }
 
+configure_install_database_profile() {
+  local py_exec="$1"
+  write_section "Database Profile"
+  echo "Choose startup database profile:"
+  echo "  1) Fresh empty database (recommended for real use)"
+  echo "  2) Sample data database (demo data; can be deleted later)"
+  local db_choice=""
+  while [[ "$db_choice" != "1" && "$db_choice" != "2" ]]; do
+    read -r -p "Enter choice [1/2]: " db_choice
+    if [[ "$db_choice" != "1" && "$db_choice" != "2" ]]; then
+      write_warn "Invalid choice. Enter 1 for empty database, or 2 for sample data."
+    fi
+  done
+  local profile="empty"
+  if [[ "$db_choice" == "2" ]]; then
+    profile="sample"
+  fi
+  write_info "Applying database profile: $profile"
+  "$py_exec" "$repo_root/scripts/set_install_db_profile.py" --db "$repo_root/app.db" --profile "$profile"
+}
+
 check_memory_swap() {
   local mem_kb swap_kb
   mem_kb="$(awk '/MemTotal/ {print $2}' /proc/meminfo)"
@@ -150,6 +171,7 @@ else
 fi
 
 install_python_deps "$venv_python"
+configure_install_database_profile "$venv_python"
 
 write_section "Hugging Face Setup"
 echo "Before token validation and model download, accept MedGemma terms on:"
