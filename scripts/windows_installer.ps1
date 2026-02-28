@@ -14,6 +14,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $script:TranscriptStarted = $false
 $script:InstallerLogPath = $null
+$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.4"
 
 function Write-Section([string]$text) {
     Write-Host ""
@@ -51,7 +52,7 @@ function Install-ExecutableFromUrl {
     catch {
         throw "Failed downloading $DisplayName installer from $Url"
     }
-    Write-Info "Launching $DisplayName installer. Complete the installer, then return here."
+    Write-Info "Launching $DisplayName installer."
     $proc = $null
     $startParams = @{
         FilePath = $installerPath
@@ -198,7 +199,17 @@ function Ensure-Python311Installed {
         Install-ExecutableFromUrl `
             -Url "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" `
             -FileName "python-3.11.9-amd64.exe" `
-            -DisplayName "Python 3.11"
+            -DisplayName "Python 3.11" `
+            -InstallerArgs @(
+                "/quiet",
+                "InstallAllUsers=0",
+                "PrependPath=1",
+                "Include_launcher=1",
+                "Include_pip=1",
+                "Include_test=0",
+                "SimpleInstall=1",
+                "Shortcuts=0"
+            )
         $resolved = Resolve-Python311Command
     }
     if (-not $resolved) {
@@ -456,6 +467,7 @@ try {
     }
 
     Write-Section "SailingMedAdvisor Windows Installer"
+    Write-Info "Installer version: $script:InstallerVersion"
     Write-Info "Repository root: $repoRoot"
     Write-Info "This script installs dependencies, validates Hugging Face token access, and downloads MedGemma models."
 

@@ -1,8 +1,10 @@
 @echo off
 setlocal
 cd /d "%~dp0"
+set "INSTALLER_VERSION=WIN-INSTALLER-2026-02-28.4"
 
 echo Starting SailingMedAdvisor Windows installer...
+echo Installer version: %INSTALLER_VERSION%
 set "INSTALLER_LOG=%~dp0windows_installer.log"
 echo Writing installer log to: %INSTALLER_LOG%
 echo Running installer self-test...
