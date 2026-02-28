@@ -1,7 +1,7 @@
 @echo off
 setlocal
 cd /d "%~dp0"
-set "INSTALLER_VERSION=WIN-INSTALLER-2026-02-28.7"
+set "INSTALLER_VERSION=WIN-INSTALLER-2026-02-28.8"
 
 echo Starting SailingMedAdvisor Windows installer...
 echo Installer version: %INSTALLER_VERSION%

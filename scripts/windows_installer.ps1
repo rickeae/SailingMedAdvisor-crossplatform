@@ -14,7 +14,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $script:TranscriptStarted = $false
 $script:InstallerLogPath = $null
-$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.7"
+$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.8"
 
 function Write-Section([string]$text) {
     Write-Host ""
@@ -532,8 +532,14 @@ try {
         Write-Host "Choose model download mode:" -ForegroundColor White
         Write-Host "  1) 4B only (recommended for most systems)" -ForegroundColor White
         Write-Host "  2) 4B + 27B (larger download and heavier runtime)" -ForegroundColor White
-        $downloadChoice = (Read-Host "Enter choice [1/2]").Trim()
-        if ([string]::IsNullOrWhiteSpace($downloadChoice)) { $downloadChoice = "1" }
+        $downloadChoice = ""
+        while ($downloadChoice -ne "1" -and $downloadChoice -ne "2") {
+            $downloadChoice = (Read-Host "Enter choice [1/2]").Trim()
+            if ($downloadChoice -ne "1" -and $downloadChoice -ne "2") {
+                Write-WarnLine "Invalid choice. Enter 1 for 4B only, or 2 for 4B + 27B."
+            }
+        }
+        Write-Info "Model choice selected: $downloadChoice"
         if ($downloadChoice -eq "2") {
             Write-Info "Downloading MedGemma 4B..."
             Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
