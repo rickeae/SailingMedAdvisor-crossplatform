@@ -128,6 +128,14 @@ else
 fi
 
 echo
+echo "7) Triage tree duplicate checks"
+if rg -n "Fish hook \\(Unbarbed\\)" seed/triage_prompt_tree.default.json >/dev/null; then
+  fail "Found deprecated duplicate pathway entry: Fish hook (Unbarbed)."
+else
+  ok "No deprecated Fish hook (Unbarbed) entry in default triage tree."
+fi
+
+echo
 echo "== QA Summary =="
 echo "Warnings: $warnings"
 echo "Failures: $failures"

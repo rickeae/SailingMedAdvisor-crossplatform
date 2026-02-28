@@ -1,7 +1,6 @@
 # SailingMedAdvisor Windows Install Guide
 
 This guide is for Windows users.
-The steps are written in plain language and explain what each action does.
 
 ## 1) Estimated System Requirements
 
