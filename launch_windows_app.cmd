@@ -10,11 +10,17 @@ shift
 cd /d "%~dp0"
 
 if not exist ".venv\Scripts\python.exe" (
-  echo [ERROR] Python virtual environment not found.
-  echo Run launch_windows_installer.cmd first.
+  echo [WARN] Python virtual environment not found.
+  echo [INFO] Launching Windows installer automatically...
   echo.
-  pause
-  exit /b 1
+  call ".\launch_windows_installer.cmd"
+  if not exist ".venv\Scripts\python.exe" (
+    echo [ERROR] Setup did not create the Python virtual environment.
+    echo [ERROR] Fix installer errors, then run launch_windows_app.cmd again.
+    echo.
+    pause
+    exit /b 1
+  )
 )
 
 if exist ".env.windows" (

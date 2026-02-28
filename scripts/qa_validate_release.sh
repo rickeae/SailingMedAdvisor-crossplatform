@@ -77,6 +77,16 @@ echo "4) Launcher wiring checks"
 if rg -n "scripts\\\\windows_installer.ps1" launch_windows_installer.cmd >/dev/null; then ok "Windows launcher points to windows installer script."; else fail "Windows launcher wiring missing."; fi
 if rg -n "scripts/macos_installer.sh" launch_macos_installer.command >/dev/null; then ok "macOS launcher points to macOS installer script."; else fail "macOS launcher wiring missing."; fi
 if rg -n "scripts/linux_installer.sh" launch_linux_installer.sh >/dev/null; then ok "Linux launcher points to Linux installer script."; else fail "Linux launcher wiring missing."; fi
+if rg -n "Launching Windows installer automatically" launch_windows_app.cmd >/dev/null; then
+  ok "Windows app launcher auto-recovers by launching installer when .venv is missing."
+else
+  fail "Windows app launcher is missing .venv auto-recovery behavior."
+fi
+if rg -n "Run launch_windows_installer.cmd first" launch_windows_app.cmd >/dev/null; then
+  fail "Windows app launcher still contains stale manual-only .venv error text."
+else
+  ok "Windows app launcher no longer uses stale manual-only .venv text."
+fi
 
 echo
 echo "5) URL health checks"
