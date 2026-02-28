@@ -14,7 +14,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 $script:TranscriptStarted = $false
 $script:InstallerLogPath = $null
-$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.4"
+$script:InstallerVersion = "WIN-INSTALLER-2026-02-28.5"
 
 function Write-Section([string]$text) {
     Write-Host ""
@@ -75,28 +75,6 @@ function Install-ExecutableFromUrl {
     }
     Start-Sleep -Seconds 2
     Refresh-ProcessPath
-}
-
-function Install-WithWinget {
-    param(
-        [Parameter(Mandatory = $true)][string]$PackageId,
-        [Parameter(Mandatory = $true)][string]$DisplayName
-    )
-    [OutputType([bool])]
-    $winget = Get-Command winget -ErrorAction SilentlyContinue
-    if (-not $winget) {
-        Write-WarnLine "winget is not available in this environment."
-        return $false
-    }
-    Write-WarnLine "$DisplayName not detected. Attempting auto-install via winget..."
-    & winget install --id $PackageId -e --silent --accept-package-agreements --accept-source-agreements
-    if ($LASTEXITCODE -ne 0) {
-        Write-WarnLine "Failed installing $DisplayName via winget."
-        return $false
-    }
-    Start-Sleep -Seconds 2
-    Refresh-ProcessPath
-    return $true
 }
 
 function Test-VcRedistInstalled {
@@ -189,13 +167,7 @@ function Resolve-Python311Command {
 function Ensure-Python311Installed {
     $resolved = Resolve-Python311Command
     if (-not $resolved) {
-        $wingetInstalled = Install-WithWinget -PackageId "Python.Python.3.11" -DisplayName "Python 3.11"
-        if (-not $wingetInstalled) {
-            Write-Info "Falling back to direct Python installer download."
-        }
-        $resolved = Resolve-Python311Command
-    }
-    if (-not $resolved) {
+        Write-Info "Python 3.11 not found. Downloading and installing Python 3.11 directly."
         Install-ExecutableFromUrl `
             -Url "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" `
             -FileName "python-3.11.9-amd64.exe" `
@@ -472,7 +444,6 @@ try {
     Write-Info "This script installs dependencies, validates Hugging Face token access, and downloads MedGemma models."
 
     Write-Section "Preflight Checks"
-    Write-Info "Git is not required for this installer (ZIP-based workflow)."
     Ensure-VcRedistInstalled
     $pythonSpec = Ensure-Python311Installed
     Write-Info "Using Python launcher: $($pythonSpec.Launcher) $($pythonSpec.PrefixArgs -join ' ')"
