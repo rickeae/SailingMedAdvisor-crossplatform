@@ -27,8 +27,10 @@ if [[ -f ".env.macos" ]]; then
 fi
 
 echo "Starting SailingMedAdvisor..."
+echo "[INFO] Browser will open automatically in about 5 seconds."
+echo "[INFO] If you briefly see a 404 or connection error, wait 5-10 seconds and refresh."
 if command -v open >/dev/null 2>&1; then
-  open "http://127.0.0.1:5000" || true
+  ( sleep 5; open "http://127.0.0.1:5000" >/dev/null 2>&1 || true ) &
 fi
 
 ".venv/bin/python" "./app.py"
@@ -43,4 +45,3 @@ fi
 read -r -n 1 -s -p "Press any key to close..."
 echo
 exit $exit_code
-

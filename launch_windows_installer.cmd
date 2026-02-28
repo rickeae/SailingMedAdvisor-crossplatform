@@ -29,6 +29,17 @@ if not "%EXIT_CODE%"=="0" (
 ) else (
   echo.
   echo Installer finished successfully.
+  echo.
+  set "START_APP="
+  set /p START_APP=Start SailingMedAdvisor now? [Y/N]: 
+  if /I "%START_APP%"=="Y" (
+    call ".\launch_windows_app.cmd"
+    exit /b 0
+  )
+  if /I "%START_APP%"=="YES" (
+    call ".\launch_windows_app.cmd"
+    exit /b 0
+  )
 )
 
 echo.

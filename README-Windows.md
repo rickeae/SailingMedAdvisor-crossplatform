@@ -71,6 +71,7 @@ The installer now runs a fixed full setup automatically:
 - Asks which models to download:
   - `4B only` (recommended for most systems)
   - `4B + 27B` (larger download and heavier runtime)
+- Asks whether to start SailingMedAdvisor automatically after install
 - Writes local runtime config files
 
 ### Token Paste Tip (Windows)
@@ -88,8 +89,12 @@ This means you may not see characters appear while typing or pasting. That is no
 
 1. In the same folder, double-click:
 - `launch_windows_app.cmd`
-2. Open browser:
+2. The launcher opens your browser automatically after a short delay.
+3. If browser does not open, use:
 - `http://127.0.0.1:5000`
+4. If you briefly see a 404 or connection error at startup:
+- Wait 5-10 seconds
+- Refresh the page
 
 ## 6) First Startup Dialogs (Normal)
 

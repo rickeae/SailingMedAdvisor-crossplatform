@@ -35,6 +35,8 @@ if exist ".env.windows" (
 )
 
 echo Starting SailingMedAdvisor...
+echo [INFO] Browser will open automatically in about 5 seconds.
+echo [INFO] If you briefly see a 404 or connection error, wait 5-10 seconds and refresh.
 set "TORCH_PROBE_LOG=%TEMP%\sma_torch_probe.log"
 call :torch_probe
 if not "%ERRORLEVEL%"=="0" (
@@ -72,7 +74,7 @@ if not "%ERRORLEVEL%"=="0" (
   pause
   exit /b 1
 )
-start "" http://127.0.0.1:5000
+start "" powershell -NoProfile -Command "Start-Sleep -Seconds 5; Start-Process 'http://127.0.0.1:5000'"
 ".venv\Scripts\python.exe" ".\app.py"
 set EXIT_CODE=%ERRORLEVEL%
 

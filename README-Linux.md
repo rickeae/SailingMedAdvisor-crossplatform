@@ -57,6 +57,7 @@ The installer now runs a fixed full setup automatically:
 - Asks which models to download:
   - `4B only` (recommended for most systems)
   - `4B + 27B` (larger download and heavier runtime)
+- Asks whether to start SailingMedAdvisor automatically after install
 - Writes local runtime config files
 
 ### Token Paste Tip (Linux)
@@ -80,6 +81,10 @@ From the same folder, run:
 
 Open browser:
 - `http://127.0.0.1:5000`
+
+If you briefly see a 404 or connection error at startup:
+- Wait 5-10 seconds
+- Refresh the page
 
 ## 5) If Something Fails
 

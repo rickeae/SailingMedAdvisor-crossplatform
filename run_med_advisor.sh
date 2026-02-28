@@ -114,5 +114,10 @@ if [ -n "$LAN_IP" ]; then
 else
     echo "🌐 LAN access: http://<this-machine-ip>:5000"
 fi
+echo "ℹ️ If you briefly see a 404 or connection error, wait 5-10 seconds and refresh."
+if command -v xdg-open >/dev/null 2>&1; then
+    echo "🌐 Browser will open automatically in about 5 seconds."
+    ( sleep 5; xdg-open "http://127.0.0.1:5000" >/dev/null 2>&1 || true ) &
+fi
 echo "=================================================="
 python3 -m uvicorn app:app --host 0.0.0.0 --port 5000
