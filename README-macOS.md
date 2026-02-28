@@ -42,7 +42,17 @@ It keeps the steps simple and direct.
 - `launch_macos_installer.command`
 5. If blocked:
 - Right-click file, then click `Open`, then click `Open` again.
-6. Follow prompts.
+6. Paste your Hugging Face token when asked.
+7. Wait for setup to finish.
+
+The installer now runs a fixed full setup automatically:
+- Creates/reuses `.venv`
+- Installs required Python packages
+- Installs CPU PyTorch
+- Downloads both MedGemma models (4B and 27B)
+- Writes local runtime config files
+
+There are no model selection prompts during install.
 
 ## 4) Start App
 

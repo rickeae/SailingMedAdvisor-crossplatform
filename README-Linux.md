@@ -44,7 +44,18 @@ chmod +x launch_linux_installer.sh
 ./launch_linux_installer.sh
 ```
 
-5. Follow prompts.
+5. Enter your Linux password if `sudo` asks for it.
+6. Paste your Hugging Face token when asked.
+7. Wait for setup to finish.
+
+The installer now runs a fixed full setup automatically:
+- Creates/reuses `.venv`
+- Installs required Python packages
+- Installs CPU PyTorch
+- Downloads both MedGemma models (4B and 27B)
+- Writes local runtime config files
+
+There are no model selection prompts during install.
 
 ## 4) Start App
 

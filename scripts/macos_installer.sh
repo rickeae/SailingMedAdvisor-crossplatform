@@ -21,24 +21,6 @@ write_warn() {
   echo "[WARN] $1"
 }
 
-test_yes() {
-  local prompt="$1"
-  local default="${2:-Y}"
-  local suffix="[Y/n]"
-  if [[ "${default^^}" != "Y" ]]; then
-    suffix="[y/N]"
-  fi
-  read -r -p "$prompt $suffix " raw
-  if [[ -z "${raw}" ]]; then
-    [[ "${default^^}" == "Y" ]]
-    return
-  fi
-  case "${raw,,}" in
-    y|yes|1|true) return 0 ;;
-    *) return 1 ;;
-  esac
-}
-
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
@@ -66,13 +48,11 @@ ensure_clt() {
   fi
   write_warn "Xcode Command Line Tools are not installed."
   write_info "They are needed to build Python packages."
-  if test_yes "Install Xcode Command Line Tools now?" "Y"; then
-    if xcode-select --install >/dev/null 2>&1; then
-      write_info "Installer launched. Complete it, then rerun launch_macos_installer.command."
-    else
-      write_warn "Install command returned non-zero. It may already be in progress."
-      write_info "Complete Command Line Tools installation, then rerun launch_macos_installer.command."
-    fi
+  if xcode-select --install >/dev/null 2>&1; then
+    write_info "Installer launched. Complete it, then rerun launch_macos_installer.command."
+  else
+    write_warn "Install command returned non-zero. It may already be in progress."
+    write_info "Complete Command Line Tools installation, then rerun launch_macos_installer.command."
   fi
   exit 1
 }
@@ -83,11 +63,6 @@ ensure_homebrew() {
   fi
   write_warn "Homebrew is not installed."
   write_info "Homebrew is the easiest way to install Python 3.11 on older/newer macOS versions."
-  if ! test_yes "Install Homebrew now?" "Y"; then
-    echo "Install Homebrew manually, then rerun:"
-    echo "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
-    exit 1
-  fi
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   if [[ -x /opt/homebrew/bin/brew ]]; then
     eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -192,13 +167,9 @@ fi
 install_python_deps "$venv_python"
 
 write_section "Hugging Face Setup"
-echo "Before continuing, you must accept MedGemma terms on:"
+echo "Before token validation and model download, accept MedGemma terms on:"
 echo "  https://huggingface.co/google/medgemma-1.5-4b-it"
 echo "  https://huggingface.co/google/medgemma-27b-text-it"
-if ! test_yes "Have you accepted the terms on both model pages?" "N"; then
-  echo "Terms not accepted yet. Complete terms acceptance, then rerun installer."
-  exit 1
-fi
 
 read -r -s -p "Paste your Hugging Face token (input hidden): " hf_token
 echo
@@ -213,61 +184,22 @@ if ! validate_hf_token "$venv_python" "$hf_token"; then
   exit 1
 fi
 
-if [[ "${1:-}" != "--skip-model-download" ]]; then
-  write_section "Model Download"
-  cache_dir="$repo_root/data/models_cache/hub"
-  mkdir -p "$cache_dir"
-  write_info "Model cache path: $cache_dir"
-  echo
-  echo "Choose model download mode:"
-  echo "  1) 4B only (fastest setup)"
-  echo "  2) 4B + 27B (larger download)"
-  echo "  3) Skip model download for now"
-  read -r -p "Enter choice [1/2/3]: " choice
-  choice="${choice:-1}"
-
-  case "$choice" in
-    1)
-      write_info "Downloading MedGemma 4B..."
-      if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
-        echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
-        exit 1
-      fi
-      ;;
-    2)
-      write_info "Downloading MedGemma 4B..."
-      if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
-        echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
-        exit 1
-      fi
-      write_info "Downloading MedGemma 27B..."
-      if ! hf_download_repo "$venv_python" "google/medgemma-27b-text-it" "$cache_dir" "$hf_token"; then
-        echo "[ERROR] Model download failed for google/medgemma-27b-text-it."
-        exit 1
-      fi
-      ;;
-    3)
-      write_warn "Skipping model download by user choice."
-      ;;
-    *)
-      write_warn "Unknown choice '$choice'. Defaulting to 4B only."
-      if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
-        echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
-        exit 1
-      fi
-      ;;
-  esac
-else
-  write_warn "Skipping model download due to --skip-model-download."
+write_section "Model Download"
+cache_dir="$repo_root/data/models_cache/hub"
+mkdir -p "$cache_dir"
+write_info "Model cache path: $cache_dir"
+write_info "Downloading MedGemma 4B..."
+if ! hf_download_repo "$venv_python" "google/medgemma-1.5-4b-it" "$cache_dir" "$hf_token"; then
+  echo "[ERROR] Model download failed for google/medgemma-1.5-4b-it."
+  exit 1
+fi
+write_info "Downloading MedGemma 27B..."
+if ! hf_download_repo "$venv_python" "google/medgemma-27b-text-it" "$cache_dir" "$hf_token"; then
+  echo "[ERROR] Model download failed for google/medgemma-27b-text-it."
+  exit 1
 fi
 
-write_section "Optional Quantized 27B CPU Setup"
-if test_yes "Install llama-cpp-python for optional quantized 27B CPU mode?" "N"; then
-  if ! "$venv_python" -m pip install llama-cpp-python; then
-    write_warn "Could not install llama-cpp-python. You can retry later."
-  fi
-fi
-write_info "GGUF path/config is managed inside SailingMedAdvisor Settings."
+write_info "Optional quantized 27B tooling is not installed by default."
 
 write_section "Write Local Runtime Config"
 env_file="$repo_root/.env.macos"

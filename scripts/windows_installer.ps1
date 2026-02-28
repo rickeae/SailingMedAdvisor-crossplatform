@@ -116,16 +116,7 @@ function Install-VcRedist {
         return
     }
     if (-not $ForceInstall) {
-        Write-WarnLine "Microsoft Visual C++ Redistributable (x64) is missing."
-        Write-WarnLine "PyTorch requires it on Windows."
-        if (-not (Test-Yes "Install Microsoft Visual C++ Redistributable (x64) now?" $true)) {
-            throw @(
-                "Microsoft Visual C++ Redistributable (x64) is required.",
-                "Install it from:",
-                "- https://aka.ms/vs/17/release/vc_redist.x64.exe",
-                "Then rerun launch_windows_installer.cmd."
-            ) -join [Environment]::NewLine
-        }
+        Write-WarnLine "Microsoft Visual C++ Redistributable (x64) is missing. Installing automatically."
     } else {
         Write-WarnLine "Attempting forced Microsoft Visual C++ Redistributable (x64) install due to torch runtime failure..."
     }
@@ -193,7 +184,7 @@ function Ensure-Python311Installed {
         }
         $resolved = Resolve-Python311Command
     }
-    if (-not $resolved -and (Test-Yes "Download and run Python 3.11 installer now?" $true)) {
+    if (-not $resolved) {
         Install-ExecutableFromUrl `
             -Url "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe" `
             -FileName "python-3.11.9-amd64.exe" `
@@ -211,16 +202,6 @@ function Ensure-Python311Installed {
     $probeArgs = @() + $resolved.PrefixArgs + @("--version")
     & $resolved.Launcher @probeArgs | Out-Null
     return $resolved
-}
-
-function Test-Yes([string]$prompt, [bool]$defaultYes = $true) {
-    $suffix = if ($defaultYes) { " [Y/n]" } else { " [y/N]" }
-    $raw = Read-Host "$prompt$suffix"
-    if ([string]::IsNullOrWhiteSpace($raw)) {
-        return $defaultYes
-    }
-    $v = $raw.Trim().ToLowerInvariant()
-    return @("y", "yes", "1", "true").Contains($v)
 }
 
 function Read-SecretToken([string]$prompt) {
@@ -492,12 +473,9 @@ try {
     Ensure-TorchRuntimeReady -PythonExe $venvPython
 
     Write-Section "Hugging Face Setup"
-    Write-Host "Before continuing, you must accept MedGemma terms on:" -ForegroundColor White
+    Write-Host "Before token validation and model download, accept MedGemma terms on:" -ForegroundColor White
     Write-Host "  https://huggingface.co/google/medgemma-1.5-4b-it" -ForegroundColor White
     Write-Host "  https://huggingface.co/google/medgemma-27b-text-it" -ForegroundColor White
-    if (-not (Test-Yes "Have you accepted the terms on both model pages?" $false)) {
-        throw "Terms not accepted yet. Complete terms acceptance, then rerun installer."
-    }
 
     $hfToken = Read-HfTokenWithValidation
     Write-Info "Validating Hugging Face token..."
@@ -508,48 +486,16 @@ try {
         $cacheDir = Join-Path $repoRoot "data\models_cache\hub"
         New-Item -ItemType Directory -Force -Path $cacheDir | Out-Null
         Write-Info "Model cache path: $cacheDir"
-
-        Write-Host ""
-        Write-Host "Choose model download mode:" -ForegroundColor White
-        Write-Host "  1) 4B only (fastest setup)" -ForegroundColor White
-        Write-Host "  2) 4B + 27B (larger download)" -ForegroundColor White
-        Write-Host "  3) Skip model download for now" -ForegroundColor White
-        $choice = (Read-Host "Enter choice [1/2/3]").Trim()
-        if ([string]::IsNullOrWhiteSpace($choice)) { $choice = "1" }
-
-        switch ($choice) {
-            "1" {
-                Write-Info "Downloading MedGemma 4B..."
-                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
-            }
-            "2" {
-                Write-Info "Downloading MedGemma 4B..."
-                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
-                Write-Info "Downloading MedGemma 27B..."
-                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-27b-text-it" -CacheDir $cacheDir -Token $hfToken
-            }
-            "3" {
-                Write-WarnLine "Skipping model download by user choice."
-            }
-            default {
-                Write-WarnLine "Unknown choice '$choice'. Defaulting to 4B only."
-                Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
-            }
-        }
+        Write-Info "Downloading MedGemma 4B..."
+        Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-1.5-4b-it" -CacheDir $cacheDir -Token $hfToken
+        Write-Info "Downloading MedGemma 27B..."
+        Invoke-HfDownload -PythonExe $venvPython -RepoId "google/medgemma-27b-text-it" -CacheDir $cacheDir -Token $hfToken
     }
     else {
         Write-WarnLine "Skipping model download due to -SkipModelDownload."
     }
 
-    Write-Section "Optional Quantized 27B CPU Setup"
-    $installLlamaCpp = Test-Yes "Install llama-cpp-python for optional quantized 27B CPU mode?" $false
-    if ($installLlamaCpp) {
-        & $venvPython -m pip install llama-cpp-python
-        if ($LASTEXITCODE -ne 0) {
-            Write-WarnLine "Could not install llama-cpp-python. You can retry later after installing Visual C++ Build Tools."
-        }
-    }
-    Write-Info "GGUF path/config is managed inside SailingMedAdvisor Settings (no manual env entry required)."
+    Write-Info "Optional quantized 27B tooling is not installed by default."
 
     Write-Section "Write Local Runtime Config"
     $envFile = Join-Path $repoRoot ".env.windows"

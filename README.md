@@ -27,6 +27,7 @@ These are practical estimates for CPU-first installs:
 Important:
 1. 4B is the normal model for these systems.
 2. 27B on CPU is a slow/deep option and not recommended for low-memory machines.
+3. Platform installers run a full fixed setup and download both 4B and 27B by default.
 
 ## Before Install
 

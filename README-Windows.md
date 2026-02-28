@@ -59,7 +59,17 @@ If this is not set, PyTorch may fail with `os error 1455`.
 3. Open folder `SailingMedAdvisor-crossplatform`.
 4. Double-click:
 - `launch_windows_installer.cmd`
-5. Follow prompts.
+5. Paste your Hugging Face token when asked.
+6. Wait for setup to finish.
+
+The installer now runs a fixed full setup automatically:
+- Creates/reuses `.venv`
+- Installs required Python packages
+- Installs CPU PyTorch
+- Downloads both MedGemma models (4B and 27B)
+- Writes local runtime config files
+
+There are no model selection prompts during install.
 
 ## 5) Start App
 
