@@ -367,11 +367,18 @@ function Test-TorchImport {
             $detailsLower = $details.ToLowerInvariant()
         }
         if ($detailsLower -like "*1455*" -or $detailsLower -like "*paging file is too small*") {
-            throw @(
+            $lines = @(
                 "PyTorch import failed because Windows virtual memory (paging file) is too small (WinError 1455).",
-                "Set paging file to at least 32768 MB (recommended 65536 MB), then reboot.",
-                "Path: System Properties > Advanced > Performance Settings > Advanced > Virtual memory > Change.",
-                "After reboot, rerun launch_windows_installer.cmd."
+                "Set paging file to at least 65536 MB (recommended 131072 MB), then reboot.",
+                "Path: System Properties > Advanced > Performance Settings > Advanced > Virtual memory > Change."
+            )
+            if ($env:USERNAME -eq "WDAGUtilityAccount") {
+                $lines += "Windows Sandbox detected (WDAGUtilityAccount). Sandbox memory/commit limits commonly prevent MedGemma 4B/27B from running."
+                $lines += "Run SailingMedAdvisor on the host Windows machine (not inside Windows Sandbox)."
+            }
+            $lines += "After reboot, rerun launch_windows_installer.cmd."
+            throw @(
+                $lines
             ) -join [Environment]::NewLine
         }
         throw @(

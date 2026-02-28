@@ -40,12 +40,7 @@ call :torch_probe
 if not "%ERRORLEVEL%"=="0" (
   findstr /I /C:"1455" /C:"paging file is too small" "%TORCH_PROBE_LOG%" >nul
   if "%ERRORLEVEL%"=="0" (
-    echo.
-    echo [ERROR] Windows virtual memory paging file is too small for PyTorch.
-    echo [ERROR] Set paging file to minimum 32768 MB, recommended 65536 MB, then reboot.
-    echo [ERROR] Open: System Properties ^> Advanced ^> Performance Settings ^> Advanced ^> Virtual memory.
-    echo.
-    pause
+    call :handle_1455
     exit /b 1
   )
   echo [WARN] PyTorch failed to load on first check. Attempting runtime repair...
@@ -55,12 +50,7 @@ if not "%ERRORLEVEL%"=="0" (
 if not "%ERRORLEVEL%"=="0" (
   findstr /I /C:"1455" /C:"paging file is too small" "%TORCH_PROBE_LOG%" >nul
   if "%ERRORLEVEL%"=="0" (
-    echo.
-    echo [ERROR] Windows virtual memory paging file is too small for PyTorch.
-    echo [ERROR] Set paging file to minimum 32768 MB, recommended 65536 MB, then reboot.
-    echo [ERROR] Open: System Properties ^> Advanced ^> Performance Settings ^> Advanced ^> Virtual memory.
-    echo.
-    pause
+    call :handle_1455
     exit /b 1
   )
   echo [WARN] PyTorch still failing. Attempting Microsoft Visual C++ Redistributable install...
@@ -70,12 +60,7 @@ if not "%ERRORLEVEL%"=="0" (
 if not "%ERRORLEVEL%"=="0" (
   findstr /I /C:"1455" /C:"paging file is too small" "%TORCH_PROBE_LOG%" >nul
   if "%ERRORLEVEL%"=="0" (
-    echo.
-    echo [ERROR] Windows virtual memory paging file is too small for PyTorch.
-    echo [ERROR] Set paging file to minimum 32768 MB, recommended 65536 MB, then reboot.
-    echo [ERROR] Open: System Properties ^> Advanced ^> Performance Settings ^> Advanced ^> Virtual memory.
-    echo.
-    pause
+    call :handle_1455
     exit /b 1
   )
   echo.
@@ -103,3 +88,17 @@ exit /b %EXIT_CODE%
 :torch_probe
 ".venv\Scripts\python.exe" -c "import torch" > "%TORCH_PROBE_LOG%" 2>&1
 exit /b %ERRORLEVEL%
+
+:handle_1455
+echo.
+echo [ERROR] Windows virtual memory paging file is too small for PyTorch.
+echo [ERROR] Set paging file to minimum 65536 MB, recommended 131072 MB, then reboot.
+echo [ERROR] Open: System Properties ^> Advanced ^> Performance Settings ^> Advanced ^> Virtual memory.
+if /I "%USERNAME%"=="WDAGUtilityAccount" (
+  echo [ERROR] Windows Sandbox detected ^(WDAGUtilityAccount^).
+  echo [ERROR] Sandbox memory/commit limits often prevent MedGemma 4B/27B from running.
+  echo [ERROR] Run SailingMedAdvisor on the host Windows machine ^(not inside Sandbox^).
+)
+echo.
+pause
+exit /b 0

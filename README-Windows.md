@@ -16,8 +16,8 @@ These numbers are estimates, not guarantees. They are based on typical Windows l
 - Recommended: 100 GB
 4. Virtual memory (Windows paging file used when RAM is full):
 - If RAM is 16 GB, set paging file to (steps are provided below):
-  - Initial size: `32768` MB
-  - Maximum size: `65536` MB
+  - Initial size: `65536` MB
+  - Maximum size: `131072` MB
 5. Internet for first install
 
 ## 2) Set Windows Virtual Memory First (Important)
@@ -34,8 +34,8 @@ If this is not set, PyTorch may fail with `os error 1455`.
 8. Select drive `C:`.
 9. Choose `Custom size`.
 10. Enter:
-- Initial size: `32768`
-- Maximum size: `65536`
+- Initial size: `65536`
+- Maximum size: `131072`
 11. Click `Set`.
 12. Click `OK` on all open windows to apply the change.
 13. Reboot Windows.
@@ -115,13 +115,19 @@ On first start, Windows may show one or more security dialogs. These are expecte
 - Recheck virtual memory settings in Section 2
 - Reboot
 - Run installer again
+ - If you are testing in Windows Sandbox (`WDAGUtilityAccount`), run the app on the host Windows machine instead. Sandbox memory/commit limits often prevent 4B/27B inference.
 2. If model download fails with `403`:
 - Recheck model terms acceptance
 - Create a new Read token
 - Run installer again
-3. If SmartScreen blocks scripts:
+3. If 27B download fails with disk/space errors:
+- Choose `4B only` and complete install.
+- Remove partial 27B cache folder if it exists:
+  - `data\\models_cache\\hub\\models--google--medgemma-27b-text-it`
+- Free at least 60 GB, then rerun installer and choose `4B + 27B`.
+4. If SmartScreen blocks scripts:
 - Click `More info` then `Run anyway`
-4. Installer error details are saved in:
+5. Installer error details are saved in:
 - `windows_installer_log.txt`
 
 ## 8) Uninstall
